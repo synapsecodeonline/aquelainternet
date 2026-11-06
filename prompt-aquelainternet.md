@@ -70,6 +70,39 @@ Rate limit (opc.) | Upstash Redis                       | npm install @upstash/r
                   |                                     | UPSTASH_REDIS_REST_TOKEN
 Parsing HTML      | Cheerio                             | npm install cheerio
 Deploy            | Vercel                              | —
+Container         | Docker + Docker Compose             | Dockerfile multi-stage
+                  |                                     | (node:20-alpine, standalone)
+
+================================================================================
+3.1 DOCKER (IMPLEMENTADO)
+================================================================================
+
+Arquivos criados:
+- Dockerfile          → build multi-stage (deps → builder → runner), imagem final
+                        roda `node server.js` (Next.js standalone), usuário
+                        não-root `nextjs`, porta 3000.
+- docker-compose.yml  → service `web`, build local, porta 3000:3000,
+                        env vars via interpolation (opcionais).
+- .dockerignore       → exclui node_modules, .next, .env, .git, etc.
+- next.config.mjs     → `output: "standalone"` habilitado.
+
+Comandos:
+  docker compose up --build     # build + sobe em http://localhost:3000
+  docker compose up -d          # detached
+  docker compose down           # para
+  docker build -t aquelainternet . && docker run -p 3000:3000 aquelainternet
+
+Variáveis de ambiente: todas opcionais. Sem Supabase, o app usa cache em
+memória por processo (funciona, mas não persiste entre restarts).
+
+Desvio consciente do spec: app/[date]/card/route.tsx usa
+`runtime = "nodejs"` em vez de "edge", pois o card precisa chamar
+lib/cache.ts → Supabase/Cheerio, que não são edge-safe. ImageResponse
+funciona normalmente em nodejs runtime.
+
+Página extra implementada: /[date]/share — preview do card PNG com botões
+"Baixar PNG" (Web Share/download) e "Compartilhar" (Web Share API), já que
+/[date]/card precisa responder imagem pura para og:image.
 
 ================================================================================
 4. LISTA CURADA DE SITES
