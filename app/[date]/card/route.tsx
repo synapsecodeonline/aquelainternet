@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { getDay } from "@/lib/cache";
 import { isValidDate } from "@/lib/date";
 import { iframeUrl } from "@/lib/wayback";
+import { SITE_HOST } from "@/lib/site";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -108,7 +109,7 @@ export async function GET(
       >
         <div style={{ display: "flex", flexDirection: "column", marginBottom: 28 }}>
           <div style={{ fontSize: 22, color: "#a3a3a3", marginBottom: 8 }}>
-            aquelainternet.com
+            {SITE_HOST}
           </div>
           <div style={{ fontSize: 52, fontWeight: 800, color: "white" }}>
             {`Aquela internet em ${formatDatePt(date)}`}

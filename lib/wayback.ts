@@ -1,4 +1,6 @@
-const UA = "AquelaInternet/1.0 (+https://aquelainternet.com; contato@aquelainternet.com)";
+import { SITE_URL } from "@/lib/site";
+
+const UA = `AquelaInternet/1.0 (+${SITE_URL}; contato@aquelainternet.com)`;
 const TIMEOUT_MS = 8000;
 const DELAY_MS = 500;
 

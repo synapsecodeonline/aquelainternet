@@ -8,6 +8,7 @@ import { isValidDate } from "@/lib/date";
 import { eraForDate } from "@/lib/era";
 import { searchSiteRecords } from "@/lib/search";
 import { sitesForDate } from "@/lib/sites";
+import { SITE_URL } from "@/lib/site";
 import { normalizeHost } from "@/lib/wayback";
 import type { DayResult } from "@/types";
 import type { Metadata } from "next";
@@ -28,10 +29,10 @@ export async function generateMetadata({
     description: "Veja como estavam Google, Orkut, UOL e mais naquele dia.",
     openGraph: {
       title: `Aquela Internet em ${formatDatePt(date)}`,
-      images: [`https://aquelainternet.com/${date}/card`],
+      images: [`${SITE_URL}/${date}/card`],
     },
     twitter: { card: "summary_large_image" },
-    alternates: { canonical: `https://aquelainternet.com/${date}` },
+    alternates: { canonical: `${SITE_URL}/${date}` },
   };
 }
 
@@ -106,7 +107,7 @@ export default async function DatePage({
     "@type": "WebPage",
     name: `Aquela Internet em ${formatDatePt(date)}`,
     datePublished: date,
-    url: `https://aquelainternet.com/${date}`,
+    url: `${SITE_URL}/${date}`,
   };
 
   return (
