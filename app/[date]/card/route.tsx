@@ -30,12 +30,13 @@ function thumbUrls(snapshotUrl: string, width: number): string[] {
   const target = iframeUrl(snapshotUrl);
   return [
     `https://image.thum.io/get/width/${width}/${target}`,
-    `https://s0.wp.com/mshots/v1/${encodeURIComponent(target)}?w=${width}`,
+    // Microlink embed devolve o screenshot direto em PNG
+    `https://api.microlink.io/?url=${encodeURIComponent(target)}&screenshot=true&meta=false&embed=screenshot.url`,
   ];
 }
 
-/** Screenshot do snapshot (thum.io → mShots como fallback). */
-async function fetchThumb(snapshotUrl: string, width = 400): Promise<string | null> {
+/** Screenshot do snapshot (thum.io → Microlink como fallback). */
+async function fetchThumb(snapshotUrl: string, width = 800): Promise<string | null> {
   for (const target of thumbUrls(snapshotUrl, width)) {
     try {
       const res = await fetch(target, {
@@ -44,7 +45,8 @@ async function fetchThumb(snapshotUrl: string, width = 400): Promise<string | nu
       });
       if (!res.ok) continue;
       const ct = res.headers.get("content-type") ?? "";
-      if (!ct.startsWith("image/")) continue;
+      // GIF não é suportado pelo Satori — trata como falha e tenta o próximo
+      if (!ct.startsWith("image/") || ct.includes("gif")) continue;
       const buf = await res.arrayBuffer();
       return `data:${ct.split(";")[0]};base64,${Buffer.from(buf).toString("base64")}`;
     } catch {
@@ -93,7 +95,10 @@ export async function GET(
   const isStory = format === "story";
   const width = isStory ? 1080 : 1200;
   const height = isStory ? 1920 : 630;
-  const thumbWidth = isStory ? 600 : 400;
+  // Feed: 4 sites em 2x2 (tiles grandes, conteúdo legível)
+  // Story: 6 sites em 2 colunas x 3 linhas
+  const maxSites = isStory ? 6 : 4;
+  const thumbWidth = 800;
 
   let result;
   try {
@@ -102,7 +107,7 @@ export async function GET(
     return new Response("erro ao gerar card", { status: 500 });
   }
 
-  const available = result.sites.filter((s) => s.available).slice(0, 6);
+  const available = result.sites.filter((s) => s.available).slice(0, maxSites);
 
   // Só gera o card quando TODAS as imagens carregaram — nunca sai com quadrado em branco
   const thumbs = await fetchAllThumbs(available, thumbWidth);
@@ -113,9 +118,11 @@ export async function GET(
     });
   }
 
-  const rows: (typeof available)[] = isStory
-    ? available.map((s) => [s])
-    : [available.slice(0, 3), available.slice(3, 6)];
+  const cols = 2;
+  const rows: (typeof available)[] = [];
+  for (let i = 0; i < available.length; i += cols) {
+    rows.push(available.slice(i, i + cols));
+  }
 
   return new ImageResponse(
     (
