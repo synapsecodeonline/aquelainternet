@@ -137,8 +137,8 @@ export default async function DatePage({
               </span>
               <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-500">{era.blurb}</p>
               <p className="mt-1 text-neutral-600 dark:text-neutral-400">
-                {result.sites.length} de {sitesForDate(date).length} sites icônicos tinham
-                captura neste dia.
+                {result.sites.length} portais com captura neste dia — sorteados da lista de{" "}
+                {sitesForDate(date).length} icônicos.
               </p>
             </>
           )}

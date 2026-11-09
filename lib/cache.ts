@@ -69,9 +69,19 @@ async function fetchFromWayback(site: SiteEntry, date: string): Promise<Snapshot
   };
 }
 
+/** Tamanho da amostra de sites consultados por visita (sorteio por request). */
+const SAMPLE_SIZE = 16;
+
+function sampleSites(sites: SiteEntry[]): SiteEntry[] {
+  if (sites.length <= SAMPLE_SIZE) return sites;
+  return [...sites].sort(() => Math.random() - 0.5).slice(0, SAMPLE_SIZE);
+}
+
 /**
- * Retorna os snapshots de todos os sites da lista curada ativos na data.
- * Usa cache do Supabase quando disponível; senão, memória.
+ * Retorna os snapshots dos sites da lista curada ativos na data.
+ * A cada chamada sorteia uma amostra de até SAMPLE_SIZE sites — visitas
+ * diferentes à mesma data trazem combinações diferentes de portais.
+ * Cache: Supabase por (site_slug, requested_date); fallback em memória.
  */
 export async function getDay(date: string): Promise<DayResult> {
   const warnings: string[] = [];
@@ -81,15 +91,17 @@ export async function getDay(date: string): Promise<DayResult> {
 
   const supabase = getSupabase();
 
+  const sites = sampleSites(sitesForDate(date));
+  // Chave de memória inclui os slugs sorteados — amostras diferentes não se misturam
+  const memKey = `${date}:${sites.map((s) => s.slug).sort().join(",")}`;
+
   // 0. Fallback: cache em memória quando Supabase não está configurado
   if (!supabase) {
-    const mem = memCache.get(date);
+    const mem = memCache.get(memKey);
     if (mem && Date.now() - mem.ts < TTL_MS) {
       return { date, sites: mem.records, warnings };
     }
   }
-
-  const sites = sitesForDate(date);
 
   // 1. Tenta ler do Supabase
   let dbRows: DbRow[] = [];
@@ -155,7 +167,7 @@ export async function getDay(date: string): Promise<DayResult> {
 
   // Fallback: cache em memória (útil quando Supabase não está configurado)
   if (!supabase) {
-    memCache.set(date, { records: result.sites, warnings: result.warnings, ts: Date.now() });
+    memCache.set(memKey, { records: result.sites, warnings: result.warnings, ts: Date.now() });
   }
 
   return result;

@@ -34,6 +34,10 @@ interface do Wayback visível.
   Wayback), data do snapshot, nome do site, manchete extraída do HTML
   (h1 → og:title → title → meta description), link para abrir o snapshot
   completo e spinner próprio até o iframe carregar.
+- A cada visita, o servidor **sorteia uma amostra de até 16 sites** da lista
+  elegível — datas revisitadas mostram combinações diferentes de portais, e
+  a primeira carga fica mais rápida. O cache é por `(site, data)`, então os
+  sites sorteados vão se acumulando no Supabase.
 - Seleção de sites **aleatória no navegador**: no máximo 10 cards por vez,
   sempre sites diferentes (nunca repete). O botão **"🔀 Novas sugestões"**
   sorteia um subconjunto diferente de sites a cada clique, sem recarregar
