@@ -29,7 +29,9 @@ interface do Wayback visível.
   Wayback), data do snapshot, nome do site, manchete extraída do HTML
   (h1 → og:title → title → meta description), link para abrir o snapshot
   completo e spinner próprio até o iframe carregar.
-- Ordem dos sites **aleatória** a cada visita.
+- Ordem dos sites **aleatória no navegador** a cada visita, com botão
+  **"🔀 Embaralhar sugestões"** para re-sortear sem recarregar (vale também
+  na busca por site e nas colunas de `/comparar`).
 - Selo de era ("A febre do Orkut", "Pré-história da internet"…) e destaque
   "📰 Manchete do dia" (escolha determinística por data).
 - Validação de conteúdo: páginas estacionadas (DomainValet, Sedo…), páginas
@@ -62,7 +64,8 @@ interface do Wayback visível.
   em vez de emitir card incompleto. Cache de 1h (nunca `immutable`).
 - Na tela de share, os botões **Baixar PNG**, **Baixar Stories** e
   **Compartilhar** ficam desabilitados até o PNG terminar de carregar;
-  erro mostra retry com cache busting (`?v=`).
+  quando tudo carrega, exibe **"✅ Todos os cards foram carregados!"**.
+  Erro mostra retry com cache busting (`?v=`).
 - Botão **Copiar legenda** gera legenda pronta para Instagram com a data por
   extenso, os sites do dia e link com **UTM** (`utm_source=instagram`) para
   medir a origem do tráfego.
