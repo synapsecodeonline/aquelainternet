@@ -22,8 +22,13 @@ function formatTs(ts: string): string {
   return `${ts.slice(6, 8)}/${ts.slice(4, 6)}/${ts.slice(0, 4)}`;
 }
 
-const THUMB_TIMEOUT_MS = 30000;
-const THUMB_ROUNDS = 3;
+const THUMB_TIMEOUT_MS = 15000;
+const THUMB_ROUNDS = 2;
+const THUMB_CACHE_TTL_MS = 50 * 60 * 1000;
+
+// Cache em memória dos screenshots por snapshotUrl — instância serverless
+// reaproveita entre gerações de card (o card em si já é cacheado por 1h).
+const thumbCache = new Map<string, { data: string; ts: number }>();
 
 /** Providers de screenshot, em ordem de tentativa. */
 function thumbUrls(snapshotUrl: string, width: number): string[] {
@@ -63,20 +68,25 @@ async function fetchThumb(snapshotUrl: string, width = 800): Promise<string | nu
  */
 async function fetchAllThumbs(
   sites: { siteSlug: string; snapshotUrl: string }[],
-  width = 400
+  width = 800
 ) {
   const thumbs: Record<string, string | null> = {};
-  for (const s of sites) thumbs[s.siteSlug] = null;
+  for (const s of sites) {
+    const hit = thumbCache.get(s.snapshotUrl);
+    thumbs[s.siteSlug] = hit && Date.now() - hit.ts < THUMB_CACHE_TTL_MS ? hit.data : null;
+  }
 
   for (let round = 0; round < THUMB_ROUNDS; round++) {
     const pending = sites.filter((s) => !thumbs[s.siteSlug]);
     if (pending.length === 0) break;
     await Promise.all(
       pending.map(async (s) => {
-        thumbs[s.siteSlug] = await fetchThumb(s.snapshotUrl, width);
+        const data = await fetchThumb(s.snapshotUrl, width);
+        if (data) thumbCache.set(s.snapshotUrl, { data, ts: Date.now() });
+        thumbs[s.siteSlug] = data;
       })
     );
-    if (round < THUMB_ROUNDS - 1) await new Promise((r) => setTimeout(r, 1500));
+    if (round < THUMB_ROUNDS - 1) await new Promise((r) => setTimeout(r, 1000));
   }
 
   return Object.values(thumbs).every(Boolean) ? thumbs : null;
