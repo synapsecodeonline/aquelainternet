@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { DatePicker } from "@/components/DatePicker";
 import { SITES } from "@/lib/sites";
 
@@ -23,6 +24,12 @@ export default function Home() {
         </header>
 
         <DatePicker />
+
+        <p className="text-sm text-neutral-500">
+          <Link href="/comparar" className="underline hover:text-neutral-800 dark:hover:text-neutral-300">
+            ⚖️ Comparar duas datas lado a lado
+          </Link>
+        </p>
 
         <section className="grid gap-4 text-left sm:grid-cols-3">
           {[

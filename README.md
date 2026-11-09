@@ -17,6 +17,8 @@ interface do Wayback visível.
 - Campo de **busca por site específico** (ex.: `uol.com.br`, `facebook.com`).
 - Link para **`/aniversario`**: input de data de nascimento que leva direto
   ao resultado ("como era a internet quando você nasceu").
+- Link para **`/comparar`**: escolhe duas datas e mostra as capturas lado a
+  lado (`/comparar?a=AAAA-MM-DD&b=AAAA-MM-DD`), com cards compactos.
 
 ### Página de resultado (`/[date]`)
 
@@ -191,5 +193,5 @@ prompt-*.md          especificação original do projeto (raiz)
 - [x] Página `/aniversario` com data de nascimento
 - [x] Testes automatizados (Vitest, 19 testes em `lib/__tests__/`)
 - [x] Fallback de screenshot (thum.io → WordPress mShots)
+- [x] Comparação de duas datas (`/comparar?a=…&b=…`, cards compactos)
 - [ ] Self-hosted screenshot (Playwright) se os gratuitos virarem gargalo
-- [ ] Modo "linha do tempo": slider comparando duas datas

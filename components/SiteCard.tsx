@@ -20,7 +20,7 @@ function snapshotGapDays(snapshotTimestamp: string, requestedDate: string): numb
   return Math.round(Math.abs(a - b) / 86400000);
 }
 
-export function SiteCard({ site }: { site: SnapshotRecord }) {
+export function SiteCard({ site, compact = false }: { site: SnapshotRecord; compact?: boolean }) {
   const [iframeBlocked, setIframeBlocked] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const gapDays = snapshotGapDays(site.snapshotTimestamp, site.requestedDate);
@@ -67,7 +67,7 @@ export function SiteCard({ site }: { site: SnapshotRecord }) {
         </a>
       </div>
 
-      <div className="relative h-[400px] w-full bg-white">
+      <div className={`relative w-full bg-white ${compact ? "h-[220px]" : "h-[400px]"}`}>
         {!loaded && !iframeBlocked && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" />
