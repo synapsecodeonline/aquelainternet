@@ -21,7 +21,8 @@ function formatTs(ts: string): string {
   return `${ts.slice(6, 8)}/${ts.slice(4, 6)}/${ts.slice(0, 4)}`;
 }
 
-const THUMB_TIMEOUT_MS = 20000;
+const THUMB_TIMEOUT_MS = 30000;
+const THUMB_ROUNDS = 3;
 
 /** Screenshot do snapshot via thum.io (renderiza a URL if_ sem toolbar). */
 async function fetchThumb(snapshotUrl: string): Promise<string | null> {
@@ -39,6 +40,29 @@ async function fetchThumb(snapshotUrl: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Busca screenshots de todos os sites. Repete até THUMB_ROUNDS rodadas
+ * para os que faltarem. Retorna null se alguma imagem não carregar —
+ * o card nunca sai com quadrados em branco.
+ */
+async function fetchAllThumbs(sites: { siteSlug: string; snapshotUrl: string }[]) {
+  const thumbs: Record<string, string | null> = {};
+  for (const s of sites) thumbs[s.siteSlug] = null;
+
+  for (let round = 0; round < THUMB_ROUNDS; round++) {
+    const pending = sites.filter((s) => !thumbs[s.siteSlug]);
+    if (pending.length === 0) break;
+    await Promise.all(
+      pending.map(async (s) => {
+        thumbs[s.siteSlug] = await fetchThumb(s.snapshotUrl);
+      })
+    );
+    if (round < THUMB_ROUNDS - 1) await new Promise((r) => setTimeout(r, 1500));
+  }
+
+  return Object.values(thumbs).every(Boolean) ? thumbs : null;
 }
 
 export async function GET(
@@ -60,11 +84,14 @@ export async function GET(
   const available = result.sites.filter((s) => s.available).slice(0, 6);
   const rows: (typeof available)[] = [available.slice(0, 3), available.slice(3, 6)];
 
-  // Screenshots em paralelo; falhas viram fallback colorido (não quebram o card)
-  const thumbEntries = await Promise.all(
-    available.map(async (s) => [s.siteSlug, await fetchThumb(s.snapshotUrl)] as const)
-  );
-  const thumbs: Record<string, string | null> = Object.fromEntries(thumbEntries);
+  // Só gera o card quando TODAS as imagens carregaram — nunca sai com quadrado em branco
+  const thumbs = await fetchAllThumbs(available);
+  if (!thumbs) {
+    return new Response("imagens indisponíveis, tente novamente", {
+      status: 503,
+      headers: { "Retry-After": "30", "Cache-Control": "no-store" },
+    });
+  }
 
   return new ImageResponse(
     (
@@ -172,7 +199,9 @@ export async function GET(
       width: 1200,
       height: 630,
       headers: {
-        "Cache-Control": "public, max-age=31536000, immutable",
+        // 1h: cards com screenshots podem mudar (thum.io gera sob demanda);
+        // immutable de 1 ano deixava cards antigos sem imagem presos no navegador
+        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
       },
     }
   );

@@ -33,6 +33,7 @@ export function ShareCard({ date, siteNames }: { date: string; siteNames?: strin
     setStatus("gerando PNG...");
     try {
       const res = await fetch(cardUrl);
+      if (!res.ok) throw new Error(`card ${res.status}`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -49,6 +50,7 @@ export function ShareCard({ date, siteNames }: { date: string; siteNames?: strin
   async function share() {
     try {
       const res = await fetch(cardUrl);
+      if (!res.ok) throw new Error(`card ${res.status}`);
       const blob = await res.blob();
       const file = new File([blob], `aquela-internet-${date}.png`, { type: "image/png" });
       if (navigator.canShare?.({ files: [file] })) {
