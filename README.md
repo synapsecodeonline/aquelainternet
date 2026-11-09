@@ -140,11 +140,29 @@ A imagem é Next.js standalone multi-stage (`node:20-alpine`, non-root).
 | `SUPABASE_SERVICE_ROLE_KEY` | não | Chave service role (escrita, bypass RLS) |
 | `NEXT_PUBLIC_SITE_URL` | não | URL pública do site (og:image, canonical, UA). Default: `https://aquelainternet.vercel.app` |
 | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | não | Rate limit opcional |
+| `CRON_SECRET` | não | Secret do Vercel Cron (`/api/cron/daily`) |
+| `IG_ACCESS_TOKEN` | não | Token da Instagram Graph API (posts automáticos) |
+| `IG_USER_ID` | não | ID da conta Instagram Business |
 
 ## Banco de dados
 
 Migration em `supabase/migrations/001_snapshots.sql` — já aplicada em
 produção. RLS habilitado: leitura pública (anon), escrita só via service role.
+
+## Post automático no Instagram
+
+`GET /api/cron/daily` é disparado pelo **Vercel Cron** (`vercel.json`,
+diariamente às 12:00 BRT). A cada execução ele:
+
+1. Sorteia uma data no formato "hoje em um ano passado" (1996–ano anterior)
+2. Aquece o cache do dia via `getDay`
+3. Se `IG_ACCESS_TOKEN` + `IG_USER_ID` estiverem configurados, posta o card
+   `/{data}/card` no Instagram via Graph API (container → publish) com
+   legenda gerada automaticamente
+
+Pré-requisitos: conta **Instagram Business/Creator** vinculada a uma página
+do Facebook + token com `instagram_basic` e `instagram_content_publish`.
+Sem as env vars, o endpoint só retorna o JSON com a data/card (modo teste).
 
 ## Deploy
 
