@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { SITE_URL } from "@/lib/site";
 
 function formatDatePt(date: string): string {
   const [y, m, d] = date.split("-");
@@ -16,11 +17,14 @@ export function ShareCard({ date, siteNames }: { date: string; siteNames?: strin
   const [status, setStatus] = useState<string | null>(null);
   const [imgState, setImgState] = useState<"loading" | "loaded" | "error">("loading");
   const [nonce, setNonce] = useState(0);
-  const cardUrl = `/${date}/card${nonce ? `?v=${nonce}` : ""}`;
+  const bust = nonce ? `v=${nonce}` : "";
+  const cardUrl = `/${date}/card${bust ? `?${bust}` : ""}`;
+  const storyCardUrl = `/${date}/card?format=story${bust ? `&${bust}` : ""}`;
 
   async function copyCaption() {
     const sites = siteNames?.length ? siteNames.slice(0, 4).join(", ") : "Google, Orkut e cia";
-    const caption = `Em ${formatDatePt(date)}, aquela internet era assim 🕰️\n\n${sites} renderizados direto do acervo do Internet Archive. Qual site te trouxe mais memória? 👇\n\n${window.location.origin}/${date}`;
+    const link = `${SITE_URL}/${date}?utm_source=instagram&utm_medium=social&utm_campaign=share-card`;
+    const caption = `Em ${formatDatePt(date)}, aquela internet era assim 🕰️\n\n${sites} renderizados direto do acervo do Internet Archive. Qual site te trouxe mais memória? 👇\n\n${link}`;
     try {
       await navigator.clipboard.writeText(caption);
       setStatus("Legenda copiada! Cola lá no Instagram ✨");
@@ -29,19 +33,23 @@ export function ShareCard({ date, siteNames }: { date: string; siteNames?: strin
     }
   }
 
-  async function download() {
+  async function fetchCard(url: string): Promise<Blob> {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`card ${res.status}`);
+    return res.blob();
+  }
+
+  async function download(url: string, filename: string, okMsg: string) {
     setStatus("gerando PNG...");
     try {
-      const res = await fetch(cardUrl);
-      if (!res.ok) throw new Error(`card ${res.status}`);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const blob = await fetchCard(url);
+      const objUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = `aquela-internet-${date}.png`;
+      a.href = objUrl;
+      a.download = filename;
       a.click();
-      URL.revokeObjectURL(url);
-      setStatus("PNG baixado!");
+      URL.revokeObjectURL(objUrl);
+      setStatus(okMsg);
     } catch {
       setStatus("erro ao gerar PNG");
     }
@@ -49,9 +57,7 @@ export function ShareCard({ date, siteNames }: { date: string; siteNames?: strin
 
   async function share() {
     try {
-      const res = await fetch(cardUrl);
-      if (!res.ok) throw new Error(`card ${res.status}`);
-      const blob = await res.blob();
+      const blob = await fetchCard(cardUrl);
       const file = new File([blob], `aquela-internet-${date}.png`, { type: "image/png" });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: "Aquela Internet" });
@@ -104,8 +110,20 @@ export function ShareCard({ date, siteNames }: { date: string; siteNames?: strin
         />
       </div>
       <div className="flex flex-wrap justify-center gap-2">
-        <Button onClick={download} disabled={imgState !== "loaded"}>
-          ⬇️ Baixar PNG
+        <Button
+          onClick={() => download(cardUrl, `aquela-internet-${date}.png`, "PNG baixado!")}
+          disabled={imgState !== "loaded"}
+        >
+          ⬇️ Baixar PNG (feed)
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() =>
+            download(storyCardUrl, `aquela-internet-${date}-story.png`, "PNG do story baixado!")
+          }
+          disabled={imgState !== "loaded"}
+        >
+          📱 Baixar Stories
         </Button>
         <Button variant="outline" onClick={share} disabled={imgState !== "loaded"}>
           🔗 Compartilhar

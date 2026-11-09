@@ -25,22 +25,33 @@ function formatTs(ts: string): string {
 const THUMB_TIMEOUT_MS = 30000;
 const THUMB_ROUNDS = 3;
 
-/** Screenshot do snapshot via thum.io (renderiza a URL if_ sem toolbar). */
-async function fetchThumb(snapshotUrl: string): Promise<string | null> {
-  const target = `https://image.thum.io/get/width/400/${iframeUrl(snapshotUrl)}`;
-  try {
-    const res = await fetch(target, {
-      headers: { Accept: "image/png" },
-      signal: AbortSignal.timeout(THUMB_TIMEOUT_MS),
-    });
-    if (!res.ok) return null;
-    const ct = res.headers.get("content-type") ?? "";
-    if (!ct.startsWith("image/")) return null;
-    const buf = await res.arrayBuffer();
-    return `data:${ct.split(";")[0]};base64,${Buffer.from(buf).toString("base64")}`;
-  } catch {
-    return null;
+/** Providers de screenshot, em ordem de tentativa. */
+function thumbUrls(snapshotUrl: string, width: number): string[] {
+  const target = iframeUrl(snapshotUrl);
+  return [
+    `https://image.thum.io/get/width/${width}/${target}`,
+    `https://s0.wp.com/mshots/v1/${encodeURIComponent(target)}?w=${width}`,
+  ];
+}
+
+/** Screenshot do snapshot (thum.io → mShots como fallback). */
+async function fetchThumb(snapshotUrl: string, width = 400): Promise<string | null> {
+  for (const target of thumbUrls(snapshotUrl, width)) {
+    try {
+      const res = await fetch(target, {
+        headers: { Accept: "image/png,image/jpeg" },
+        signal: AbortSignal.timeout(THUMB_TIMEOUT_MS),
+      });
+      if (!res.ok) continue;
+      const ct = res.headers.get("content-type") ?? "";
+      if (!ct.startsWith("image/")) continue;
+      const buf = await res.arrayBuffer();
+      return `data:${ct.split(";")[0]};base64,${Buffer.from(buf).toString("base64")}`;
+    } catch {
+      // tenta o próximo provider
+    }
   }
+  return null;
 }
 
 /**
@@ -48,7 +59,10 @@ async function fetchThumb(snapshotUrl: string): Promise<string | null> {
  * para os que faltarem. Retorna null se alguma imagem não carregar —
  * o card nunca sai com quadrados em branco.
  */
-async function fetchAllThumbs(sites: { siteSlug: string; snapshotUrl: string }[]) {
+async function fetchAllThumbs(
+  sites: { siteSlug: string; snapshotUrl: string }[],
+  width = 400
+) {
   const thumbs: Record<string, string | null> = {};
   for (const s of sites) thumbs[s.siteSlug] = null;
 
@@ -57,7 +71,7 @@ async function fetchAllThumbs(sites: { siteSlug: string; snapshotUrl: string }[]
     if (pending.length === 0) break;
     await Promise.all(
       pending.map(async (s) => {
-        thumbs[s.siteSlug] = await fetchThumb(s.snapshotUrl);
+        thumbs[s.siteSlug] = await fetchThumb(s.snapshotUrl, width);
       })
     );
     if (round < THUMB_ROUNDS - 1) await new Promise((r) => setTimeout(r, 1500));
@@ -67,13 +81,19 @@ async function fetchAllThumbs(sites: { siteSlug: string; snapshotUrl: string }[]
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: { date: string } }
 ) {
   const date = params.date;
   if (!isValidDate(date)) {
     return new Response("data inválida", { status: 400 });
   }
+
+  const format = new URL(request.url).searchParams.get("format");
+  const isStory = format === "story";
+  const width = isStory ? 1080 : 1200;
+  const height = isStory ? 1920 : 630;
+  const thumbWidth = isStory ? 600 : 400;
 
   let result;
   try {
@@ -83,16 +103,19 @@ export async function GET(
   }
 
   const available = result.sites.filter((s) => s.available).slice(0, 6);
-  const rows: (typeof available)[] = [available.slice(0, 3), available.slice(3, 6)];
 
   // Só gera o card quando TODAS as imagens carregaram — nunca sai com quadrado em branco
-  const thumbs = await fetchAllThumbs(available);
+  const thumbs = await fetchAllThumbs(available, thumbWidth);
   if (!thumbs) {
     return new Response("imagens indisponíveis, tente novamente", {
       status: 503,
       headers: { "Retry-After": "30", "Cache-Control": "no-store" },
     });
   }
+
+  const rows: (typeof available)[] = isStory
+    ? available.map((s) => [s])
+    : [available.slice(0, 3), available.slice(3, 6)];
 
   return new ImageResponse(
     (
@@ -103,22 +126,22 @@ export async function GET(
           display: "flex",
           flexDirection: "column",
           backgroundColor: "#0a0a0a",
-          padding: "48px 56px",
+          padding: isStory ? "72px 64px" : "48px 56px",
           fontFamily: "sans-serif",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", marginBottom: 28 }}>
-          <div style={{ fontSize: 22, color: "#a3a3a3", marginBottom: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", marginBottom: isStory ? 48 : 28 }}>
+          <div style={{ fontSize: isStory ? 30 : 22, color: "#a3a3a3", marginBottom: 10 }}>
             {SITE_HOST}
           </div>
-          <div style={{ fontSize: 52, fontWeight: 800, color: "white" }}>
+          <div style={{ fontSize: isStory ? 76 : 52, fontWeight: 800, color: "white" }}>
             {`Aquela internet em ${formatDatePt(date)}`}
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, flex: 1 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: isStory ? 20 : 14, flex: 1 }}>
           {rows.map((row, i) => (
-            <div key={i} style={{ display: "flex", gap: 14, flex: 1 }}>
+            <div key={i} style={{ display: "flex", gap: isStory ? 20 : 14, flex: 1 }}>
               {row.map((site) => {
                 const thumb = thumbs[site.siteSlug];
                 return (
@@ -130,7 +153,7 @@ export async function GET(
                       flexDirection: "column",
                       backgroundColor: "#171717",
                       border: `2px solid ${site.siteColor}`,
-                      borderRadius: 12,
+                      borderRadius: isStory ? 20 : 12,
                       overflow: "hidden",
                     }}
                   >
@@ -154,7 +177,7 @@ export async function GET(
                       ) : (
                         <div
                           style={{
-                            fontSize: 44,
+                            fontSize: isStory ? 72 : 44,
                             fontWeight: 800,
                             color: site.siteColor,
                           }}
@@ -163,22 +186,22 @@ export async function GET(
                         </div>
                       )}
                     </div>
-                    <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ padding: isStory ? "16px 22px" : "10px 14px", display: "flex", flexDirection: "column" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <div
                           style={{
-                            width: 10,
-                            height: 10,
-                            borderRadius: 5,
+                            width: isStory ? 14 : 10,
+                            height: isStory ? 14 : 10,
+                            borderRadius: 7,
                             backgroundColor: site.siteColor,
                           }}
                         />
-                        <div style={{ fontSize: 17, fontWeight: 700, color: "white" }}>
+                        <div style={{ fontSize: isStory ? 26 : 17, fontWeight: 700, color: "white" }}>
                           {site.siteName}
                         </div>
                       </div>
-                      <div style={{ fontSize: 13, color: "#a3a3a3", marginTop: 5 }}>
-                        {`${formatTs(site.snapshotTimestamp)}${site.headline ? ` · “${site.headline.slice(0, 36)}”` : ""}`}
+                      <div style={{ fontSize: isStory ? 19 : 13, color: "#a3a3a3", marginTop: 6 }}>
+                        {`${formatTs(site.snapshotTimestamp)}${site.headline ? ` · “${site.headline.slice(0, isStory ? 60 : 36)}”` : ""}`}
                       </div>
                     </div>
                   </div>
@@ -189,18 +212,18 @@ export async function GET(
           ))}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
-          <div style={{ fontSize: 18, color: "#737373" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: isStory ? 40 : 20 }}>
+          <div style={{ fontSize: isStory ? 26 : 18, color: "#737373" }}>
             Descubra como era a internet naquele dia — acervo do Internet Archive
           </div>
         </div>
       </div>
     ),
     {
-      width: 1200,
-      height: 630,
+      width,
+      height,
       headers: {
-        // 1h: cards com screenshots podem mudar (thum.io gera sob demanda);
+        // 1h: cards com screenshots podem mudar (providers geram sob demanda);
         // immutable de 1 ano deixava cards antigos sem imagem presos no navegador
         "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
       },

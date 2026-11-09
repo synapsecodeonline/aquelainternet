@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 const SHORTCUTS = [
@@ -79,6 +80,11 @@ export function DatePicker() {
           </Button>
         ))}
       </div>
+      <p className="text-sm text-neutral-500">
+        🎂 <Link href="/aniversario" className="underline hover:text-neutral-800 dark:hover:text-neutral-300">
+          Ver a internet no dia do seu nascimento
+        </Link>
+      </p>
     </div>
   );
 }

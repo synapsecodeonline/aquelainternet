@@ -15,6 +15,8 @@ interface do Wayback visível.
 - Seletor de data (padrão: hoje − 10 anos), botão "Me surpreenda" e atalhos
   para datas icônicas: 07/07/2014, 11/09/2001, 15/03/2020 e 01/01/2000.
 - Campo de **busca por site específico** (ex.: `uol.com.br`, `facebook.com`).
+- Link para **`/aniversario`**: input de data de nascimento que leva direto
+  ao resultado ("como era a internet quando você nasceu").
 
 ### Página de resultado (`/[date]`)
 
@@ -47,16 +49,21 @@ interface do Wayback visível.
 
 - PNG **1200×630** gerado com `next/og` (`ImageResponse`), usado também como
   `og:image` (preview automático no WhatsApp/Instagram/Twitter).
-- Cada quadrado do card contém o **screenshot real** da página arquivada
-  (via thum.io renderizando a URL `if_`).
+- Variante **Stories 1080×1920** via `?format=story` (`/card?format=story`),
+  com layout em coluna única e tipografia maior — botão "📱 Baixar Stories"
+  na tela de share.
+- Cada quadrado do card contém o **screenshot real** da página arquivada.
+  Providers em cadeia: **thum.io → WordPress mShots** (fallback automático
+  por imagem).
 - O card **só é gerado com todas as imagens**: até 3 rodadas de retry por
   thumbnail; se alguma falhar, a rota retorna **503** (`Retry-After: 30`)
   em vez de emitir card incompleto. Cache de 1h (nunca `immutable`).
-- Na tela de share, os botões **Baixar PNG** e **Compartilhar** ficam
-  desabilitados até o PNG terminar de carregar; erro mostra retry com cache
-  busting (`?v=`).
+- Na tela de share, os botões **Baixar PNG**, **Baixar Stories** e
+  **Compartilhar** ficam desabilitados até o PNG terminar de carregar;
+  erro mostra retry com cache busting (`?v=`).
 - Botão **Copiar legenda** gera legenda pronta para Instagram com a data por
-  extenso e os sites do dia.
+  extenso, os sites do dia e link com **UTM** (`utm_source=instagram`) para
+  medir a origem do tráfego.
 
 ## APIs
 
@@ -136,6 +143,7 @@ produção. RLS habilitado: leitura pública (anon), escrita só via service rol
 
 ```bash
 npx tsx scripts/test-wayback.ts   # integração Wayback (3 sites × 3 datas)
+npm test                          # Vitest: date, wayback helpers, headlines, eras
 npm run build                     # lint + typecheck + build
 ```
 
@@ -149,10 +157,13 @@ curl -o card.png "https://aquelainternet.vercel.app/2014-07-07/card"  # 1200×63
 ## Estrutura
 
 ```
-app/                 rotas: /, /[date], /[date]/share, /[date]/card, /api/*
-components/          SiteGrid, SiteCard, DatePicker, ShareCard, ErrorState, …
+app/                 rotas: /, /aniversario, /[date], /[date]/share,
+                     /[date]/card, /api/*
+components/          SiteGrid, SiteCard, DatePicker, ShareCard, ErrorState,
+                     AnniversaryForm, …
 lib/                 wayback.ts, cache.ts, search.ts, sites.ts, date.ts,
                      era.ts, parse-headline.ts, site.ts, supabase.ts
+lib/__tests__/       testes Vitest (19 testes)
 types/               tipos compartilhados (DayResult etc.)
 supabase/migrations/ 001_snapshots.sql
 scripts/             test-wayback.ts
@@ -161,8 +172,9 @@ prompt-*.md          especificação original do projeto (raiz)
 
 ## Limitações conhecidas
 
-- thum.io é gratuito e tem rate limit — se os screenshots do card falharem
-  com frequência, a rota retorna 503 e o usuário pode tentar de novo.
+- Screenshot usa serviços gratuitos (thum.io + mShots) — se ambos falharem,
+  a rota retorna 503 e o usuário pode tentar de novo. mShots pode demorar
+  alguns segundos na primeira renderização de cada URL.
 - Capturas do Wayback são irregulares: dias com pouco crawl mostram poucos
   (ou nenhum) cards — comportamento esperado, não bug.
 - A busca por site cobre apenas o host exato (sem subpáginas), pois
@@ -174,9 +186,10 @@ prompt-*.md          especificação original do projeto (raiz)
 
 - [ ] Domínio próprio (`aquelainternet.com`) + `NEXT_PUBLIC_SITE_URL`
 - [ ] Rotacionar as chaves do Supabase (foram expostas em chat)
-- [ ] UTM nas legendas para medir origem Instagram/WhatsApp
-- [ ] Self-hosted screenshot (substituir thum.io se houver rate limit)
-- [ ] Testes automatizados (Vitest) para wayback/cache/search
-- [ ] Página `/aniversario` com input de data de nascimento
+- [x] UTM nas legendas para medir origem Instagram/WhatsApp
+- [x] Card Stories 1080×1920 (`?format=story`)
+- [x] Página `/aniversario` com data de nascimento
+- [x] Testes automatizados (Vitest, 19 testes em `lib/__tests__/`)
+- [x] Fallback de screenshot (thum.io → WordPress mShots)
+- [ ] Self-hosted screenshot (Playwright) se os gratuitos virarem gargalo
 - [ ] Modo "linha do tempo": slider comparando duas datas
-- [ ] Exportar card em Stories 1080×1920 além do feed 1200×630
