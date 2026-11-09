@@ -25,13 +25,19 @@ interface do Wayback visível.
 - Grade responsiva com até 10 cards, **somente capturas do dia exato**
   pesquisado (via CDX `from=to=data`). Sem cards "sem registro" — se não há
   captura real, o site simplesmente não aparece.
+- Lista curada com **23 portais** (17 brasileiros: UOL, Globo, BOL, Folha,
+  Estadão, Abril, Terra, iG, R7, Exame, Meio Bit, UAI, TecMundo, Canaltech,
+  Olhar Digital, CNN Brasil, Metrópoles + internacionais: Google, YouTube,
+  Wikipedia, Yahoo, MSN, GeoCities), filtrados por era. Redes sociais com
+  login ficam de fora.
 - Cada card exibe: iframe da página arquivada (modo `if_`, sem toolbar do
   Wayback), data do snapshot, nome do site, manchete extraída do HTML
   (h1 → og:title → title → meta description), link para abrir o snapshot
   completo e spinner próprio até o iframe carregar.
-- Ordem dos sites **aleatória no navegador** a cada visita, com botão
-  **"🔀 Embaralhar sugestões"** para re-sortear sem recarregar (vale também
-  na busca por site e nas colunas de `/comparar`).
+- Seleção de sites **aleatória no navegador**: no máximo 10 cards por vez,
+  sempre sites diferentes (nunca repete). O botão **"🔀 Novas sugestões"**
+  sorteia um subconjunto diferente de sites a cada clique, sem recarregar
+  (vale também na busca por site e nas colunas de `/comparar`).
 - Selo de era ("A febre do Orkut", "Pré-história da internet"…) e destaque
   "📰 Manchete do dia" (escolha determinística por data).
 - Validação de conteúdo: páginas estacionadas (DomainValet, Sedo…), páginas
