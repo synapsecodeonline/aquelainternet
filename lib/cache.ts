@@ -5,6 +5,9 @@ import { extractHeadline } from "./parse-headline";
 import type { DayResult, SnapshotRecord } from "@/types";
 
 const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
+/** Resultados negativos (sem captura) expiram rápido: uma falha transitória
+ *  do Wayback não pode envenenar a data por 30 dias. */
+const NEGATIVE_TTL_MS = 10 * 60 * 1000; // 10 minutos
 
 interface DbRow {
   site_slug: string;
@@ -30,8 +33,9 @@ function toRecord(site: SiteEntry, date: string, row: DbRow): SnapshotRecord {
   };
 }
 
-function isFresh(createdAt: string): boolean {
-  return Date.now() - new Date(createdAt).getTime() < TTL_MS;
+function isFresh(createdAt: string, hasSnapshot: boolean): boolean {
+  const age = Date.now() - new Date(createdAt).getTime();
+  return hasSnapshot ? age < TTL_MS : age < NEGATIVE_TTL_MS;
 }
 
 // Cache em memória como fallback quando Supabase não está configurado
@@ -123,12 +127,14 @@ export async function getDay(date: string): Promise<DayResult> {
 
   for (const site of sites) {
     const row = bySlug.get(site.slug);
-    const fresh = row && isFresh(row.created_at);
-    // TTL: revalida registros >30 dias APENAS se o snapshot for do ano corrente
+    const fresh = row && isFresh(row.created_at, Boolean(row.snapshot_timestamp));
+    // TTL: revalida registros >30 dias APENAS se o snapshot for do ano corrente.
+    // Registros negativos (sem snapshot) sempre revalidam após 10 min,
+    // mesmo em anos passados — uma falha transitória não pode ficar presa.
     if (row && fresh) {
       records.push(toRecord(site, date, row));
-    } else if (row && !fresh && requestYear < currentYear) {
-      records.push(toRecord(site, date, row)); // anos passados nunca mudam
+    } else if (row && !fresh && requestYear < currentYear && row.snapshot_timestamp) {
+      records.push(toRecord(site, date, row)); // snapshots de anos passados nunca mudam
     } else {
       missing.push(site);
       if (row) stale.push(site);
