@@ -62,13 +62,14 @@ interface do Wayback visível.
 ### Card para compartilhar (`/[date]/card`, `/[date]/share`)
 
 - PNG **1200×630** gerado com `next/og` (`ImageResponse`), usado também como
-  `og:image` (preview automático no WhatsApp/Instagram/Twitter).
+  `og:image` (preview automático no WhatsApp/Instagram/Twitter). Mostra
+  **4 sites em tiles 2×2 grandes** — o conteúdo da página é o protagonista.
 - Variante **Stories 1080×1920** via `?format=story` (`/card?format=story`),
-  com layout em coluna única e tipografia maior — botão "📱 Baixar Stories"
-  na tela de share.
-- Cada quadrado do card contém o **screenshot real** da página arquivada.
-  Providers em cadeia: **thum.io → WordPress mShots** (fallback automático
-  por imagem).
+  com **6 sites em 2 colunas × 3 linhas** e tipografia maior — botão
+  "📱 Baixar Stories" na tela de share.
+- Cada quadrado do card contém o **screenshot real** (800px) da página
+  arquivada. Providers em cadeia: **thum.io → Microlink** (GIF é rejeitado
+  pois o Satori não o suporta).
 - O card **só é gerado com todas as imagens**: até 3 rodadas de retry por
   thumbnail; se alguma falhar, a rota retorna **503** (`Retry-After: 30`)
   em vez de emitir card incompleto. Cache de 1h (nunca `immutable`).
@@ -205,6 +206,6 @@ prompt-*.md          especificação original do projeto (raiz)
 - [x] Card Stories 1080×1920 (`?format=story`)
 - [x] Página `/aniversario` com data de nascimento
 - [x] Testes automatizados (Vitest, 19 testes em `lib/__tests__/`)
-- [x] Fallback de screenshot (thum.io → WordPress mShots)
+- [x] Fallback de screenshot (thum.io → Microlink; GIF rejeitado)
 - [x] Comparação de duas datas (`/comparar?a=…&b=…`, cards compactos)
 - [ ] Self-hosted screenshot (Playwright) se os gratuitos virarem gargalo
