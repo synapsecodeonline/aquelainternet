@@ -1,6 +1,7 @@
 import { getSupabase } from "./supabase";
 import { sitesForDate, type SiteEntry } from "./sites";
-import { findSnapshot, fetchHeadline, sleep } from "./wayback";
+import { findSnapshot, fetchRawHtml, isJunkPage } from "./wayback";
+import { extractHeadline } from "./parse-headline";
 import type { DayResult, SnapshotRecord } from "@/types";
 
 const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
@@ -52,8 +53,11 @@ async function fetchFromWayback(site: SiteEntry, date: string): Promise<Snapshot
   const snap = await findSnapshot(site.url, date);
   if (!snap) return base;
 
-  // headline é best-effort: se falhar, não marca o site como indisponível
-  const headline = await fetchHeadline(snap, `http://${site.url}/`).catch(() => null);
+  // Baixa o HTML bruto uma vez: extrai manchete e rejeita páginas sem conteúdo real
+  // (domínio estacionado, erro do Wayback, HTML vazio)
+  const html = await fetchRawHtml(snap, `http://${site.url}/`).catch(() => null);
+  const junk = html ? isJunkPage(html) : false;
+  const headline = html && !junk ? extractHeadline(html) : null;
 
   return {
     ...base,
@@ -61,7 +65,7 @@ async function fetchFromWayback(site: SiteEntry, date: string): Promise<Snapshot
     snapshotUrl: snap.snapshotUrl,
     statusCode: Number(snap.status) || 200,
     headline,
-    available: true,
+    available: !junk,
   };
 }
 
@@ -138,14 +142,16 @@ export async function getDay(date: string): Promise<DayResult> {
         { onConflict: "site_slug,requested_date" }
       );
     }
-    await sleep(500);
+    // O throttle em fetchWithTimeout já garante ≥500ms entre chamadas ao archive.org
   }
 
   // Ordena conforme a lista curada
   const order = new Map(sites.map((s, i) => [s.slug, i]));
   records.sort((a, b) => (order.get(a.siteSlug) ?? 0) - (order.get(b.siteSlug) ?? 0));
 
-  const result = { date, sites: records, warnings };
+  // Só exibe capturas reais do dia — sem cards "sem registro"
+  const visible = records.filter((r) => r.available);
+  const result = { date, sites: visible, warnings };
 
   // Fallback: cache em memória (útil quando Supabase não está configurado)
   if (!supabase) {

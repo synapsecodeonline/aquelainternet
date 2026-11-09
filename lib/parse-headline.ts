@@ -16,5 +16,11 @@ export function extractHeadline(html: string): string | null {
   const headerLink = $("header a").first().text().trim();
   if (headerLink) return headerLink.slice(0, 120);
 
+  const ogTitle = $('meta[property="og:title"]').attr("content")?.trim();
+  if (ogTitle) return ogTitle.slice(0, 120);
+
+  const description = $('meta[name="description"]').attr("content")?.trim();
+  if (description) return description.slice(0, 120);
+
   return null;
 }

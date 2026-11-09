@@ -3,9 +3,31 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
-export function ShareCard({ date }: { date: string }) {
+function formatDatePt(date: string): string {
+  const [y, m, d] = date.split("-");
+  const meses = [
+    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+  ];
+  return `${Number(d)} de ${meses[Number(m) - 1]} de ${y}`;
+}
+
+export function ShareCard({ date, siteNames }: { date: string; siteNames?: string[] }) {
   const [status, setStatus] = useState<string | null>(null);
-  const cardUrl = `/${date}/card`;
+  const [imgState, setImgState] = useState<"loading" | "loaded" | "error">("loading");
+  const [nonce, setNonce] = useState(0);
+  const cardUrl = `/${date}/card${nonce ? `?v=${nonce}` : ""}`;
+
+  async function copyCaption() {
+    const sites = siteNames?.length ? siteNames.slice(0, 4).join(", ") : "Google, Orkut e cia";
+    const caption = `Em ${formatDatePt(date)}, aquela internet era assim 🕰️\n\n${sites} renderizados direto do acervo do Internet Archive. Qual site te trouxe mais memória? 👇\n\n${window.location.origin}/${date}`;
+    try {
+      await navigator.clipboard.writeText(caption);
+      setStatus("Legenda copiada! Cola lá no Instagram ✨");
+    } catch {
+      setStatus("Não consegui copiar — selecione e copie manualmente");
+    }
+  }
 
   async function download() {
     setStatus("gerando PNG...");
@@ -41,16 +63,53 @@ export function ShareCard({ date }: { date: string }) {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={cardUrl}
-        alt={`Card: Aquela internet em ${date}`}
-        className="w-full max-w-3xl rounded-lg border border-neutral-200 dark:border-neutral-800"
-      />
-      <div className="flex gap-2">
-        <Button onClick={download}>⬇️ Baixar PNG</Button>
-        <Button variant="outline" onClick={share}>
+      <div className="relative w-full max-w-3xl">
+        {imgState !== "loaded" && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-lg border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900">
+            {imgState === "loading" ? (
+              <>
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-300 border-t-neutral-900 dark:border-neutral-700 dark:border-t-neutral-100" />
+                <p className="text-sm text-neutral-500">
+                  Gerando o card… pode levar até 1 minuto na primeira vez.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-red-600">Não consegui gerar o card.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setNonce((n) => n + 1);
+                    setImgState("loading");
+                  }}
+                >
+                  Tentar novamente
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={cardUrl}
+          alt={`Card: Aquela internet em ${date}`}
+          onLoad={() => setImgState("loaded")}
+          onError={() => setImgState("error")}
+          className={`w-full rounded-lg border border-neutral-200 dark:border-neutral-800 ${
+            imgState === "loaded" ? "" : "invisible"
+          }`}
+        />
+      </div>
+      <div className="flex flex-wrap justify-center gap-2">
+        <Button onClick={download} disabled={imgState !== "loaded"}>
+          ⬇️ Baixar PNG
+        </Button>
+        <Button variant="outline" onClick={share} disabled={imgState !== "loaded"}>
           🔗 Compartilhar
+        </Button>
+        <Button variant="ghost" onClick={copyCaption}>
+          📋 Copiar legenda
         </Button>
       </div>
       {status && <p className="text-sm text-neutral-500">{status}</p>}

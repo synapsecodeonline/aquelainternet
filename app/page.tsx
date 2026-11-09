@@ -27,7 +27,7 @@ export default function Home() {
         <section className="grid gap-4 text-left sm:grid-cols-3">
           {[
             ["1. Escolha uma data", "Sua data de nascimento, um ano marcante, qualquer dia."],
-            ["2. Veja os sites", `${SITES.length} sites icônicos renderizados como estavam naquele dia.`],
+            ["2. Veja os sites", `${SITES.filter((s) => !s.loginWall).length} portais icônicos renderizados como estavam naquele dia.`],
             ["3. Compartilhe", "Exporte um card pronto pras redes sociais."],
           ].map(([title, desc]) => (
             <div

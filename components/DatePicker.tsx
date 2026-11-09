@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -17,7 +17,14 @@ export function DatePicker() {
     .toISOString()
     .slice(0, 10);
   const [date, setDate] = useState(defaultDate);
+  const [site, setSite] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function path(d: string) {
+    const s = site.trim();
+    return s ? `/${d}?site=${encodeURIComponent(s)}` : `/${d}`;
+  }
 
   function go(d: string) {
     if (!d) return;
@@ -27,7 +34,7 @@ export function DatePicker() {
       return;
     }
     setError(null);
-    router.push(`/${d}`);
+    startTransition(() => router.push(path(d)));
   }
 
   function surprise() {
@@ -49,11 +56,19 @@ export function DatePicker() {
           className="h-12 flex-1 rounded-md border border-neutral-300 bg-white px-3 text-base dark:border-neutral-700 dark:bg-neutral-900"
           aria-label="Escolha uma data"
         />
-        <Button size="lg" onClick={() => go(date)}>
-          Ver aquela internet
+        <Button size="lg" onClick={() => go(date)} disabled={isPending}>
+          {isPending ? "Carregando…" : "Ver aquela internet"}
         </Button>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
+      <input
+        type="text"
+        value={site}
+        onChange={(e) => setSite(e.target.value)}
+        placeholder="ou busque um site específico (ex.: uol.com.br)"
+        className="h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+        aria-label="Buscar um site específico"
+      />
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" onClick={surprise}>
           🎲 Me surpreenda
