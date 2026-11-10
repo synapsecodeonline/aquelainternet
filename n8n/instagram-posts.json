@@ -1,5 +1,5 @@
 {
-  "name": "Aquela Internet — Post diário no Instagram",
+  "name": "Aquela Internet — Posts no Instagram (2x ao dia)",
   "nodes": [
     {
       "parameters": {
@@ -7,13 +7,13 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 12 * * *"
+              "expression": "0 12,20 * * *"
             }
           ]
         }
       },
       "id": "schedule-trigger",
-      "name": "Diário 12h",
+      "name": "2x ao dia",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [0, 300]
@@ -68,7 +68,7 @@
     }
   ],
   "connections": {
-    "Diário 12h": {
+    "2x ao dia": {
       "main": [[{ "node": "Pega card do dia", "type": "main", "index": 0 }]]
     },
     "Pega card do dia": {
