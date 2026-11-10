@@ -19,24 +19,33 @@ async function throttle() {
 }
 
 async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response | null> {
-  await throttle();
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      ...init,
-      signal: controller.signal,
-      headers: {
-        "User-Agent": UA,
-        ...(init?.headers ?? {}),
-      },
-    });
-    return res;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
+  // O archive.org responde 429/503 quando limita (IPs de saída serverless
+  // são compartilhados e muito requisitados). Retry com backoff evita que
+  // uma rajada de consultas vire "sem captura" em massa.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await throttle();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetch(url, {
+        ...init,
+        signal: controller.signal,
+        headers: {
+          "User-Agent": UA,
+          ...(init?.headers ?? {}),
+        },
+      });
+      if (res.ok || (res.status !== 429 && res.status < 500)) return res;
+      // 429/5xx → espera e tenta de novo
+      await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+    } catch {
+      if (attempt === 2) return null;
+      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+    } finally {
+      clearTimeout(timer);
+    }
   }
+  return null;
 }
 
 function formatDate(d: Date): string {
@@ -83,7 +92,7 @@ export async function cdxSearch(
     `&from=${formatDate(from)}&to=${formatDate(to)}&limit=${limit}`;
 
   const res = await fetchWithTimeout(api);
-  if (!res) return [];
+  if (!res || !res.ok) return [];
   const rows: unknown = await res.json().catch(() => null);
   if (!Array.isArray(rows) || rows.length < 2) return [];
 
@@ -114,7 +123,7 @@ export async function findSnapshot(
     `&filter=statuscode:200&from=${d}&to=${d}&limit=3`;
 
   const res = await fetchWithTimeout(api);
-  if (!res) return null;
+  if (!res || !res.ok) return null;
   const rows: unknown = await res.json().catch(() => null);
   if (!Array.isArray(rows) || rows.length < 2) return null;
 
@@ -153,7 +162,7 @@ export async function fetchRawHtml(
 ): Promise<string | null> {
   const url = rawHtmlUrl(snapshot, originalUrl);
   const res = await fetchWithTimeout(url);
-  if (!res) return null;
+  if (!res || !res.ok) return null;
   // Lê só o início do documento — páginas arquivadas podem ter MBs e só
   // precisamos do <head>/início do <body> para validar e extrair manchete.
   if (!res.body) return res.text().catch(() => null);
