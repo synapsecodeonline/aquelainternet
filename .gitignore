@@ -37,3 +37,7 @@ next-env.d.ts
 
 # IDE
 .idea/
+
+# segredos locais
+.env
+.env.n8n
