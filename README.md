@@ -71,6 +71,10 @@ Usuário ──► Vercel (Next.js 14)
   sempre sites diferentes (nunca repete). O botão **"🔀 Novas sugestões"**
   sorteia um subconjunto diferente de sites a cada clique, sem recarregar
   (vale também na busca por site e nas colunas de `/comparar`).
+- **Filtro por assunto ao vivo**: campo "Filtrar por assunto…" acima da
+  grade casa o termo (sem acentos/maiúsculas) contra manchete, nome do
+  site e URL de cada card — ex.: `política`, `tech`, `futebol`. Funciona
+  em busca geral, busca por site e `/comparar`.
 - Selo de era ("A febre do Orkut", "Pré-história da internet"…) e destaque
   "📰 Manchete do dia" (escolha determinística por data).
 - Validação de conteúdo: páginas estacionadas (DomainValet, Sedo…), páginas
@@ -283,9 +287,9 @@ app/                 rotas: /, /aniversario, /comparar, /[date],
                      /[date]/share, /[date]/card, /api/* (+ loading.tsx)
 components/          SiteGrid, SiteCard, DatePicker, ShareCard, ErrorState,
                      AnniversaryForm, CompareForm, RandomDateLink, …
-lib/                 wayback.ts, cache.ts, search.ts, sites.ts, date.ts,
-                     era.ts, parse-headline.ts, site.ts, supabase.ts
-lib/__tests__/       testes Vitest (19 testes)
+lib/                 wayback.ts, cache.ts, search.ts, topic.ts, sites.ts,
+                     date.ts, era.ts, parse-headline.ts, site.ts, supabase.ts
+lib/__tests__/       testes Vitest (23 testes)
 types/               tipos compartilhados (DayResult, SnapshotRecord…)
 supabase/migrations/ 001_snapshots.sql
 n8n/                  instagram-posts.json — workflow de posts 2x/dia

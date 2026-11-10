@@ -4,6 +4,8 @@ import { normalizeHost, iframeUrl, isJunkPage, rawHtmlUrl } from "../wayback";
 import { extractHeadline } from "../parse-headline";
 import { eraForDate } from "../era";
 import { sitesForDate } from "../sites";
+import { normalizeTopic, topicMatch } from "../topic";
+import type { SnapshotRecord } from "@/types";
 
 describe("isValidDate", () => {
   it("aceita datas reais", () => {
@@ -142,5 +144,37 @@ describe("sitesForDate", () => {
     expect(sitesForDate("2020-01-01").map((s) => s.slug)).not.toContain("epoca");
     // Orkut (loginWall) nunca aparece na busca geral
     expect(sitesForDate("2008-01-01").map((s) => s.slug)).not.toContain("orkut");
+  });
+});
+
+describe("topicMatch", () => {
+  const rec = (over: Partial<SnapshotRecord>): SnapshotRecord => ({
+    siteSlug: "x",
+    siteName: "UOL",
+    siteColor: "#fff",
+    requestedDate: "2014-07-07",
+    snapshotTimestamp: "20140707120000",
+    snapshotUrl: "https://web.archive.org/web/20140707120000/http://uol.com.br/",
+    statusCode: 200,
+    headline: "Eleições: candidatos participam de debate na TV",
+    available: true,
+    ...over,
+  });
+
+  it("casa por manchete ignorando acentos e caixa", () => {
+    expect(topicMatch(rec({}), "eleicoes")).toBe(true);
+    expect(topicMatch(rec({}), "ELEIÇÕES")).toBe(true);
+    expect(topicMatch(rec({}), "debate")).toBe(true);
+  });
+
+  it("casa por nome do site e URL", () => {
+    expect(topicMatch(rec({ headline: null }), "uol")).toBe(true);
+    expect(topicMatch(rec({ headline: null, siteName: "Folha" }), "uol.com.br")).toBe(true);
+  });
+
+  it("rejeita termos ausentes e query vazia aceita tudo", () => {
+    expect(topicMatch(rec({}), "futebol")).toBe(false);
+    expect(topicMatch(rec({}), "   ")).toBe(true);
+    expect(normalizeTopic("Ação!")).toBe("acao!");
   });
 });
