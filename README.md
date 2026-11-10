@@ -49,18 +49,16 @@ Usuário ──► Vercel (Next.js 14)
 - Grade responsiva com até 10 cards, **somente capturas do dia exato**
   pesquisado (via CDX `from=to=data`). Sem cards "sem registro" — se não há
   captura real, o site simplesmente não aparece.
-- Lista curada com **~48 portais de notícias** filtrados por era —
-  brasileiros: UOL, Globo, BOL, Folha, Estadão, Abril, VEJA, IstoÉ, Época,
+- Lista curada com **~30 portais de notícias brasileiros** filtrados por
+  era: UOL, Globo, BOL, Folha, Estadão, Abril, VEJA, IstoÉ, Época,
   CartaCapital, Valor, Extra, G1, Terra, iG, R7, Exame, Meio Bit, UAI,
   Tecnoblog, Adrenaline, TecMundo, Canaltech, TechTudo, Olhar Digital, CNN
-  Brasil, Metrópoles, Nexo, The Intercept, Brasil 247 — internacionais: BBC,
-  CNN, NY Times, The Guardian, Washington Post, Reuters, Bloomberg, Al
-  Jazeera, ABC, Fox, MSNBC, ESPN, Drudge, HuffPost, BuzzFeed, Mashable,
-  TechCrunch, Engadget, CNET, Ars Technica, Wired, The Verge, Vox.
-  **Somente portais de notícias** na busca geral — Google, YouTube,
-  Wikipedia, Yahoo, MSN e GeoCities foram movidos para `nonNews` (fora da
-  busca geral, mas pesquisáveis via `?site=`). Redes sociais com login
-  (Orkut, Facebook, Twitter/X, Instagram) seguem como `loginWall`.
+  Brasil, Metrópoles, Nexo, The Intercept, Brasil 247.
+  **A busca geral é só BR e só notícias** — internacionais (BBC, NYT,
+  Reuters…), não-notícias (Google, YouTube, Wikipedia, Yahoo, MSN,
+  GeoCities) e redes sociais com login (Orkut, Facebook, Twitter/X,
+  Instagram) ficam como `nonNews`/`loginWall`: fora da busca geral, mas
+  pesquisáveis digitando o domínio em `?site=`.
 - Cada card exibe: iframe da página arquivada (modo `if_`, sem toolbar do
   Wayback), data do snapshot, nome do site, manchete extraída do HTML
   (h1 → og:title → title → meta description), link para abrir o snapshot
@@ -80,10 +78,11 @@ Usuário ──► Vercel (Next.js 14)
   conteúdo real.
 - O botão **"🎲 Outra data"** preserva os parâmetros de pesquisa — numa
   busca por site (`?site=`), a nova data continua buscando o mesmo site.
-- Somente **portais de notícias** na busca geral; não-notícias (Google,
-  YouTube, Wikipedia, Yahoo, MSN, GeoCities) e redes sociais com login
-  (Facebook, Twitter/X, Instagram, Orkut) ficam de fora porque ou não são
-  notícia ou caem na tela de login — mas aparecem na **busca por URL**.
+- Somente **portais de notícias brasileiros** na busca geral; internacionais
+  (`nonNews`), não-notícias (Google, YouTube, Wikipedia, Yahoo, MSN,
+  GeoCities) e redes sociais com login (Facebook, Twitter/X, Instagram,
+  Orkut) ficam de fora porque não são o foco ou caem na tela de login —
+  mas aparecem na **busca por URL**.
 
 ### Busca por site (`/[date]?site=dominio.com`)
 

@@ -46,30 +46,31 @@ export const SITES: SiteEntry[] = [
   { slug: "intercept",    name: "The Intercept", url: "theintercept.com.br",  era: { start: 2016 },                    color: "#1B1B1B" },
   { slug: "brasil247",    name: "Brasil 247",    url: "brasil247.com",        era: { start: 2011 },                    color: "#E30613" },
 
-  // --- Portais de notícias internacionais ---
-  { slug: "bbc",          name: "BBC",           url: "bbc.com",              era: { start: 1997 },                    color: "#BB1919" },
-  { slug: "cnn",          name: "CNN",           url: "cnn.com",              era: { start: 1996 },                    color: "#CC0000" },
-  { slug: "nytimes",      name: "NY Times",      url: "nytimes.com",          era: { start: 1996 },                    color: "#111111" },
-  { slug: "guardian",     name: "The Guardian",  url: "theguardian.com",      era: { start: 1999 },                    color: "#052962" },
-  { slug: "wapo",         name: "Washington Post", url: "washingtonpost.com", era: { start: 1996 },                    color: "#1A1A1A" },
-  { slug: "reuters",      name: "Reuters",       url: "reuters.com",          era: { start: 1996 },                    color: "#FF8000" },
-  { slug: "bloomberg",    name: "Bloomberg",     url: "bloomberg.com",        era: { start: 1996 },                    color: "#2496ED" },
-  { slug: "aljazeera",    name: "Al Jazeera",    url: "aljazeera.com",        era: { start: 1996 },                    color: "#BB0F0F" },
-  { slug: "abcnews",      name: "ABC News",      url: "abcnews.go.com",       era: { start: 1996 },                    color: "#005EB8" },
-  { slug: "foxnews",      name: "Fox News",      url: "foxnews.com",          era: { start: 1998 },                    color: "#003B71" },
-  { slug: "msnbc",        name: "MSNBC",         url: "msnbc.com",            era: { start: 1996, end: 2012 },         color: "#0072BC" },
-  { slug: "espn",         name: "ESPN",          url: "espn.com",             era: { start: 1995 },                    color: "#E21C24" },
-  { slug: "drudge",       name: "Drudge Report", url: "drudgereport.com",     era: { start: 1995 },                    color: "#FF0000" },
-  { slug: "huffpost",     name: "HuffPost",      url: "huffingtonpost.com",   era: { start: 2005 },                    color: "#D44500" },
-  { slug: "buzzfeed",     name: "BuzzFeed",      url: "buzzfeed.com",         era: { start: 2006 },                    color: "#F7DC6F" },
-  { slug: "mashable",     name: "Mashable",      url: "mashable.com",         era: { start: 2005 },                    color: "#85BF25" },
-  { slug: "techcrunch",   name: "TechCrunch",    url: "techcrunch.com",       era: { start: 2005 },                    color: "#0F0F0F" },
-  { slug: "engadget",     name: "Engadget",      url: "engadget.com",         era: { start: 2004 },                    color: "#FF9900" },
-  { slug: "cnet",         name: "CNET",          url: "cnet.com",             era: { start: 1994 },                    color: "#1B4F9C" },
-  { slug: "arstechnica",  name: "Ars Technica",  url: "arstechnica.com",      era: { start: 1998 },                    color: "#F26522" },
-  { slug: "wired",        name: "Wired",         url: "wired.com",            era: { start: 1993 },                    color: "#111111" },
-  { slug: "theverge",     name: "The Verge",     url: "theverge.com",         era: { start: 2011 },                    color: "#D93025" },
-  { slug: "vox",          name: "Vox",           url: "vox.com",              era: { start: 2014 },                    color: "#4C9A2A" },
+  // --- Portais de notícias internacionais (nonNews: fora da busca geral,
+  //     que é só BR; pesquisáveis via ?site=) ---
+  { slug: "bbc",          name: "BBC",           url: "bbc.com",              era: { start: 1997 },                    color: "#BB1919", nonNews: true },
+  { slug: "cnn",          name: "CNN",           url: "cnn.com",              era: { start: 1996 },                    color: "#CC0000", nonNews: true },
+  { slug: "nytimes",      name: "NY Times",      url: "nytimes.com",          era: { start: 1996 },                    color: "#111111", nonNews: true },
+  { slug: "guardian",     name: "The Guardian",  url: "theguardian.com",      era: { start: 1999 },                    color: "#052962", nonNews: true },
+  { slug: "wapo",         name: "Washington Post", url: "washingtonpost.com", era: { start: 1996 },                    color: "#1A1A1A", nonNews: true },
+  { slug: "reuters",      name: "Reuters",       url: "reuters.com",          era: { start: 1996 },                    color: "#FF8000", nonNews: true },
+  { slug: "bloomberg",    name: "Bloomberg",     url: "bloomberg.com",        era: { start: 1996 },                    color: "#2496ED", nonNews: true },
+  { slug: "aljazeera",    name: "Al Jazeera",    url: "aljazeera.com",        era: { start: 1996 },                    color: "#BB0F0F", nonNews: true },
+  { slug: "abcnews",      name: "ABC News",      url: "abcnews.go.com",       era: { start: 1996 },                    color: "#005EB8", nonNews: true },
+  { slug: "foxnews",      name: "Fox News",      url: "foxnews.com",          era: { start: 1998 },                    color: "#003B71", nonNews: true },
+  { slug: "msnbc",        name: "MSNBC",         url: "msnbc.com",            era: { start: 1996, end: 2012 },         color: "#0072BC", nonNews: true },
+  { slug: "espn",         name: "ESPN",          url: "espn.com",             era: { start: 1995 },                    color: "#E21C24", nonNews: true },
+  { slug: "drudge",       name: "Drudge Report", url: "drudgereport.com",     era: { start: 1995 },                    color: "#FF0000", nonNews: true },
+  { slug: "huffpost",     name: "HuffPost",      url: "huffingtonpost.com",   era: { start: 2005 },                    color: "#D44500", nonNews: true },
+  { slug: "buzzfeed",     name: "BuzzFeed",      url: "buzzfeed.com",         era: { start: 2006 },                    color: "#F7DC6F", nonNews: true },
+  { slug: "mashable",     name: "Mashable",      url: "mashable.com",         era: { start: 2005 },                    color: "#85BF25", nonNews: true },
+  { slug: "techcrunch",   name: "TechCrunch",    url: "techcrunch.com",       era: { start: 2005 },                    color: "#0F0F0F", nonNews: true },
+  { slug: "engadget",     name: "Engadget",      url: "engadget.com",         era: { start: 2004 },                    color: "#FF9900", nonNews: true },
+  { slug: "cnet",         name: "CNET",          url: "cnet.com",             era: { start: 1994 },                    color: "#1B4F9C", nonNews: true },
+  { slug: "arstechnica",  name: "Ars Technica",  url: "arstechnica.com",      era: { start: 1998 },                    color: "#F26522", nonNews: true },
+  { slug: "wired",        name: "Wired",         url: "wired.com",            era: { start: 1993 },                    color: "#111111", nonNews: true },
+  { slug: "theverge",     name: "The Verge",     url: "theverge.com",         era: { start: 2011 },                    color: "#D93025", nonNews: true },
+  { slug: "vox",          name: "Vox",           url: "vox.com",              era: { start: 2014 },                    color: "#4C9A2A", nonNews: true },
 
   // --- Não-notícias (fora da busca geral; ok via ?site=) ---
   { slug: "google",    name: "Google",    url: "google.com",    era: { start: 1998 },            color: "#4285F4", nonNews: true },
@@ -86,8 +87,9 @@ export const SITES: SiteEntry[] = [
   { slug: "instagram", name: "Instagram", url: "instagram.com",  era: { start: 2010 },            color: "#E4405F", loginWall: true },
 ];
 
-/** Portais de notícias ativos na data (por ano).
- *  Regra: fora da era → não entra; loginWall ou nonNews → só via busca por URL. */
+/** Portais de notícias brasileiros ativos na data (por ano) — a busca
+ *  geral é só BR. Regra: fora da era → não entra; loginWall ou nonNews →
+ *  só via busca por URL (?site=). */
 export function sitesForDate(date: string): SiteEntry[] {
   const year = Number(date.slice(0, 4));
   return SITES.filter(
