@@ -74,3 +74,59 @@ export async function searchSiteRecords(input: string, date: string): Promise<Sn
 
   return records;
 }
+
+/**
+ * Melhor captura de UM site próximo de uma data (janela ±30 dias):
+ * ordena por proximidade do dia exato e valida conteúdo real.
+ * Usado pela comparação lado a lado (`/comparar?site=…`).
+ */
+export async function findClosestSiteRecord(
+  input: string,
+  date: string
+): Promise<SnapshotRecord | null> {
+  const host = normalizeHost(input);
+  if (!host) return null;
+
+  const hits = await cdxSearch(host, date);
+  if (hits.length === 0) return null;
+
+  const target = Date.parse(`${date}T12:00:00Z`);
+  const scored = hits
+    .map((h) => {
+      const ts = h.timestamp; // YYYYMMDDHHMMSS
+      const iso = `${ts.slice(0, 4)}-${ts.slice(4, 6)}-${ts.slice(6, 8)}T${ts.slice(8, 10)}:${ts.slice(10, 12)}:${ts.slice(12, 14)}Z`;
+      return { h, dist: Math.abs(Date.parse(iso) - target) };
+    })
+    .sort((a, b) => a.dist - b.dist);
+
+  const byTs = new Map<string, (typeof scored)[number]>();
+  for (const s of scored) if (!byTs.has(s.h.timestamp)) byTs.set(s.h.timestamp, s);
+  const candidates = Array.from(byTs.values()).slice(0, 10);
+
+  for (const { h } of candidates) {
+    const snap = { snapshotUrl: h.snapshotUrl, timestamp: h.timestamp, status: h.status };
+    const html = await fetchRawHtml(snap, h.original).catch(() => null);
+    if (!html || isJunkPage(html)) continue;
+
+    let path = "/";
+    try {
+      path = new URL(h.original).pathname || "/";
+    } catch {
+      // original malformado — segue com "/"
+    }
+
+    return {
+      siteSlug: `compare-${host}-${date}`,
+      siteName: host,
+      siteColor: "#0ea5e9",
+      requestedDate: date,
+      snapshotTimestamp: h.timestamp,
+      snapshotUrl: h.snapshotUrl,
+      statusCode: Number(h.status) || 200,
+      headline: extractHeadline(html) ?? (path === "/" ? "página inicial" : path.slice(0, 60)),
+      available: true,
+    };
+  }
+
+  return null;
+}

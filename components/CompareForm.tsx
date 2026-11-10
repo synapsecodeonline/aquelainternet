@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { isValidDate } from "@/lib/date";
+import { normalizeHost } from "@/lib/wayback";
 
 function pastDate(yearsAgo: number): string {
   return new Date(Date.now() - yearsAgo * 365.25 * 24 * 60 * 60 * 1000)
@@ -11,8 +12,17 @@ function pastDate(yearsAgo: number): string {
     .slice(0, 10);
 }
 
-export function CompareForm({ a, b }: { a?: string; b?: string }) {
+export function CompareForm({
+  site,
+  a,
+  b,
+}: {
+  site?: string;
+  a?: string;
+  b?: string;
+}) {
   const router = useRouter();
+  const [domain, setDomain] = useState(site ?? "");
   const [dateA, setDateA] = useState(a ?? pastDate(10));
   const [dateB, setDateB] = useState(b ?? pastDate(20));
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +31,11 @@ export function CompareForm({ a, b }: { a?: string; b?: string }) {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const today = new Date().toISOString().slice(0, 10);
+    const host = normalizeHost(domain);
+    if (!host) {
+      setError("Digite um domínio válido, ex.: uol.com.br");
+      return;
+    }
     if (!isValidDate(dateA) || !isValidDate(dateB)) {
       setError("Confira as duas datas.");
       return;
@@ -35,7 +50,7 @@ export function CompareForm({ a, b }: { a?: string; b?: string }) {
     }
     setError(null);
     startTransition(() =>
-      router.push(`/comparar?a=${dateA}&b=${dateB}`)
+      router.push(`/comparar?site=${encodeURIComponent(host)}&a=${dateA}&b=${dateB}`)
     );
   }
 
@@ -43,7 +58,15 @@ export function CompareForm({ a, b }: { a?: string; b?: string }) {
     "h-12 flex-1 rounded-md border border-neutral-300 bg-white px-3 text-base dark:border-neutral-700 dark:bg-neutral-900";
 
   return (
-    <form onSubmit={submit} className="flex w-full max-w-2xl flex-col gap-3">
+    <form onSubmit={submit} className="flex w-full max-w-3xl flex-col gap-3">
+      <input
+        type="text"
+        value={domain}
+        onChange={(e) => setDomain(e.target.value)}
+        placeholder="dominio.com (ex.: uol.com.br, folha.uol.com.br)"
+        className={inputCls}
+        aria-label="Site para comparar"
+      />
       <div className="flex flex-wrap items-center gap-2">
         <input
           type="date"

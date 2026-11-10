@@ -17,8 +17,9 @@ interface do Wayback visível.
 - Campo de **busca por site específico** (ex.: `uol.com.br`, `facebook.com`).
 - Link para **`/aniversario`**: input de data de nascimento que leva direto
   ao resultado ("como era a internet quando você nasceu").
-- Link para **`/comparar`**: escolhe duas datas e mostra as capturas lado a
-  lado (`/comparar?a=AAAA-MM-DD&b=AAAA-MM-DD`), com cards compactos.
+- Link para **`/comparar`**: digite um domínio + duas datas e veja a
+  captura válida mais próxima de cada data lado a lado
+  (`/comparar?site=DOMINIO&a=AAAA-MM-DD&b=AAAA-MM-DD`, janela ±30 dias).
 
 ### Página de resultado (`/[date]`)
 
@@ -276,5 +277,5 @@ prompt-*.md          especificação original do projeto (raiz)
 - [x] Página `/aniversario` com data de nascimento
 - [x] Testes automatizados (Vitest, 19 testes em `lib/__tests__/`)
 - [x] Fallback de screenshot (thum.io → Microlink; GIF rejeitado)
-- [x] Comparação de duas datas (`/comparar?a=…&b=…`, cards compactos)
+- [x] Comparação do mesmo site em duas datas (`/comparar?site=…&a=…&b=…`)
 - [ ] Self-hosted screenshot (Playwright) se os gratuitos virarem gargalo

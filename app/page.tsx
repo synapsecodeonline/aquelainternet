@@ -27,7 +27,7 @@ export default function Home() {
 
         <p className="text-sm text-neutral-500">
           <Link href="/comparar" className="underline hover:text-neutral-800 dark:hover:text-neutral-300">
-            ⚖️ Comparar duas datas lado a lado
+            ⚖️ Comparar um site em duas datas
           </Link>
         </p>
 

@@ -1,44 +1,49 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getDay } from "@/lib/cache";
+import { findClosestSiteRecord } from "@/lib/search";
+import { normalizeHost } from "@/lib/wayback";
 import { isValidDate } from "@/lib/date";
 import { eraForDate } from "@/lib/era";
-import { SiteGrid } from "@/components/SiteGrid";
+import { SiteCard } from "@/components/SiteCard";
 import { ErrorState } from "@/components/ErrorState";
 import { CompareForm } from "@/components/CompareForm";
-import type { DayResult } from "@/types";
+import type { SnapshotRecord } from "@/types";
 
 export const metadata: Metadata = {
-  title: "Compare duas datas | Aquela Internet",
+  title: "Compare um site em duas datas | Aquela Internet",
   description:
-    "Veja lado a lado como era a internet em duas datas diferentes — direto do acervo do Internet Archive.",
+    "Veja lado a lado como um mesmo site era em duas datas diferentes — direto do acervo do Internet Archive.",
 };
+
+export const dynamic = "force-dynamic";
 
 function formatDatePt(date: string): string {
   const [y, m, d] = date.split("-");
   return `${d}/${m}/${y}`;
 }
 
-function DateColumn({ result }: { result: DayResult }) {
-  const era = eraForDate(result.date);
-  const available = result.sites.filter((s) => s.available);
+function DateColumn({
+  record,
+  requestedDate,
+}: {
+  record: SnapshotRecord | null;
+  requestedDate: string;
+}) {
+  const era = eraForDate(requestedDate);
   return (
     <section className="min-w-0 flex-1">
       <header className="mb-4">
-        <h2 className="text-2xl font-bold">{formatDatePt(result.date)}</h2>
+        <h2 className="text-2xl font-bold">{formatDatePt(requestedDate)}</h2>
         <span className="mt-2 inline-block rounded-full border border-neutral-300 px-3 py-1 text-xs font-medium text-neutral-600 dark:border-neutral-700 dark:text-neutral-400">
           {era.label}
         </span>
-        <p className="mt-2 text-sm text-neutral-500">
-          {available.length} captura(s) de {result.sites.length} sites consultados
-        </p>
       </header>
-      {available.length === 0 ? (
-        <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-8 text-center text-sm text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900">
-          Nenhuma captura neste dia.
-        </div>
+      {record ? (
+        <SiteCard site={record} />
       ) : (
-        <SiteGrid sites={available} compact />
+        <div className="flex min-h-[280px] flex-col items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-8 text-center text-sm text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900">
+          Nenhuma captura válida numa janela de ±30 dias desta data.
+        </div>
       )}
     </section>
   );
@@ -47,14 +52,16 @@ function DateColumn({ result }: { result: DayResult }) {
 export default async function ComparePage({
   searchParams,
 }: {
-  searchParams: { a?: string; b?: string };
+  searchParams: { site?: string; a?: string; b?: string };
 }) {
+  const site = searchParams?.site ? normalizeHost(searchParams.site) : "";
   const a = searchParams?.a;
   const b = searchParams?.b;
-  const ready =
+  const datesOk =
     a && b && isValidDate(a) && isValidDate(b) && a !== b &&
     a <= new Date().toISOString().slice(0, 10) &&
     b <= new Date().toISOString().slice(0, 10);
+  const ready = Boolean(site) && datesOk;
 
   if (!ready) {
     return (
@@ -65,16 +72,21 @@ export default async function ComparePage({
               ← Aquela Internet
             </Link>
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-              Como a internet mudou entre duas datas?
+              Como um site mudou com o tempo?
             </h1>
             <p className="text-lg text-neutral-600 dark:text-neutral-400">
-              Escolha duas datas e veja os portais lado a lado.
+              Digite um domínio e duas datas para ver as capturas lado a lado.
             </p>
           </header>
-          <CompareForm a={a} b={b} />
-          {a && b && !ready && (
+          <CompareForm site={searchParams?.site} a={a} b={b} />
+          {a && b && !datesOk && (
             <p className="text-sm text-red-600">
               Escolha duas datas válidas e diferentes (não futuras).
+            </p>
+          )}
+          {(a || b) && !site && (
+            <p className="text-sm text-red-600">
+              Digite o domínio do site que quer comparar.
             </p>
           )}
         </div>
@@ -82,37 +94,43 @@ export default async function ComparePage({
     );
   }
 
-  let results: DayResult[];
+  let records: (SnapshotRecord | null)[];
   try {
-    results = await Promise.all([getDay(a!), getDay(b!)]);
+    records = await Promise.all([
+      findClosestSiteRecord(site, a!),
+      findClosestSiteRecord(site, b!),
+    ]);
   } catch {
     return (
       <main className="flex min-h-screen items-center justify-center px-6">
         <ErrorState
           message="Não conseguimos falar com o Internet Archive agora."
-          retryHref={`/comparar?a=${a}&b=${b}`}
+          retryHref={`/comparar?site=${site}&a=${a}&b=${b}`}
         />
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-6 py-10">
       <header className="mb-8">
         <Link href="/" className="text-sm text-neutral-500 hover:underline">
           ← Aquela Internet
         </Link>
         <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
-          {formatDatePt(a!)} <span className="text-neutral-400">vs</span> {formatDatePt(b!)}
+          {site} — {formatDatePt(a!)} <span className="text-neutral-400">vs</span> {formatDatePt(b!)}
         </h1>
+        <p className="mt-2 text-sm text-neutral-500">
+          Mostrando a captura válida mais próxima de cada data (janela de ±30 dias).
+        </p>
         <div className="mt-4">
-          <CompareForm a={a} b={b} />
+          <CompareForm site={site} a={a} b={b} />
         </div>
       </header>
       <div className="flex flex-col gap-10 lg:flex-row">
-        <DateColumn result={results[0]} />
+        <DateColumn record={records[0]} requestedDate={a!} />
         <div className="hidden w-px bg-neutral-200 dark:bg-neutral-800 lg:block" />
-        <DateColumn result={results[1]} />
+        <DateColumn record={records[1]} requestedDate={b!} />
       </div>
     </main>
   );
