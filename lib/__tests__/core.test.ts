@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { isValidDate } from "../date";
 import { normalizeHost, iframeUrl, isJunkPage, rawHtmlUrl } from "../wayback";
-import { extractHeadline } from "../parse-headline";
+import { extractHeadline, extractTopHeadlines, extractCardHeadline } from "../parse-headline";
 import { eraForDate } from "../era";
 import { sitesForDate } from "../sites";
 import { normalizeTopic, topicMatch } from "../topic";
@@ -107,6 +107,54 @@ describe("extractHeadline", () => {
 
   it("retorna null sem nada", () => {
     expect(extractHeadline("<html><body></body></html>")).toBeNull();
+  });
+});
+
+describe("extractTopHeadlines / extractCardHeadline", () => {
+  const portal = `<html><head><title>UOL - Notícias e informações</title></head><body>
+    <header><nav>
+      <a href="#">Esportes</a><a href="#">Entretenimento</a><a href="#">Política</a>
+    </nav></header>
+    <main>
+      <h2 class="title">Mercado financeiro fecha em alta com fluxo estrangeiro recorde</h2>
+      <h2>Seleção brasileira define lista final convocada para a Copa</h2>
+      <a class="headline-link" href="#">Governo anuncia novo pacote de medidas econômicas para o país</a>
+      <a class="headline-link" href="#">Prefeitura inaugura nova linha de metrô na capital hoje</a>
+      <a href="#">Ler mais sobre o assunto</a>
+    </main></body></html>`;
+
+  it("extrai chamadas de matéria reais, ignorando nav e 'ler mais'", () => {
+    const tops = extractTopHeadlines(portal);
+    expect(tops.length).toBeGreaterThanOrEqual(4);
+    expect(tops[0]).toContain("Mercado financeiro");
+    expect(tops.join(" ")).not.toContain("Esportes");
+    expect(tops.join(" ")).not.toContain("Ler mais");
+  });
+
+  it("deduplica textos repetidos", () => {
+    const html = `<html><body>
+      <h2>Governo anuncia pacote de medidas para a economia brasileira</h2>
+      <h3>Governo anuncia pacote de medidas para a economia brasileira</h3>
+    </body></html>`;
+    expect(extractTopHeadlines(html).length).toBe(1);
+  });
+
+  it("extractCardHeadline une até 4 manchetes e remove nome do site", () => {
+    const html = `<html><body>
+      <h1>UOL - Portal de notícias e informações do Brasil</h1>
+      <h2>Economia tem melhor semana do ano com queda do dólar</h2>
+      <h2>Justiça determina investigação sobre contratos públicos</h2>
+    </body></html>`;
+    const h = extractCardHeadline(html, "UOL");
+    expect(h).toContain("Economia tem melhor semana");
+    expect(h).toContain("Justiça determina investigação");
+    expect(h).not.toContain("UOL - Portal");
+    expect(h?.split(" · ").length).toBeLessThanOrEqual(4);
+  });
+
+  it("cai no extrator antigo quando não há chamadas", () => {
+    const html = `<html><head><title>Artigo específico</title></head><body><p>texto</p></body></html>`;
+    expect(extractCardHeadline(html)).toBe("Artigo específico");
   });
 });
 

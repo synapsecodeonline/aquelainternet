@@ -1,5 +1,5 @@
 import { cdxSearch, fetchRawHtml, isJunkPage, normalizeHost } from "./wayback";
-import { extractHeadline } from "./parse-headline";
+import { extractCardHeadline } from "./parse-headline";
 import type { SnapshotRecord } from "@/types";
 
 const MAX_RESULTS = 10;
@@ -67,7 +67,7 @@ export async function searchSiteRecords(input: string, date: string): Promise<Sn
       statusCode: Number(hit.status) || 200,
       // Capturas antigas costumam ser stubs de redirect sem h1/title —
       // o iframe resolve o redirect dentro do próprio Wayback.
-      headline: extractHeadline(html) ?? (path === "/" ? "página inicial" : path.slice(0, 60)),
+      headline: extractCardHeadline(html, host) ?? (path === "/" ? "página inicial" : path.slice(0, 60)),
       available: true,
     });
   }
@@ -123,7 +123,7 @@ export async function findClosestSiteRecord(
       snapshotTimestamp: h.timestamp,
       snapshotUrl: h.snapshotUrl,
       statusCode: Number(h.status) || 200,
-      headline: extractHeadline(html) ?? (path === "/" ? "página inicial" : path.slice(0, 60)),
+      headline: extractCardHeadline(html, host) ?? (path === "/" ? "página inicial" : path.slice(0, 60)),
       available: true,
     };
   }

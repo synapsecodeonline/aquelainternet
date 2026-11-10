@@ -1,7 +1,7 @@
 import { getSupabase } from "./supabase";
 import { sitesForDate, type SiteEntry } from "./sites";
 import { findSnapshot, fetchRawHtml, isJunkPage } from "./wayback";
-import { extractHeadline } from "./parse-headline";
+import { extractCardHeadline } from "./parse-headline";
 import type { DayResult, SnapshotRecord } from "@/types";
 
 const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
@@ -61,7 +61,7 @@ async function fetchFromWayback(site: SiteEntry, date: string): Promise<Snapshot
   // (domínio estacionado, erro do Wayback, HTML vazio)
   const html = await fetchRawHtml(snap, `http://${site.url}/`).catch(() => null);
   const junk = html ? isJunkPage(html) : false;
-  const headline = html && !junk ? extractHeadline(html) : null;
+  const headline = html && !junk ? extractCardHeadline(html, site.name) : null;
 
   return {
     ...base,

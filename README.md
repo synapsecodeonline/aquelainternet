@@ -60,9 +60,10 @@ Usuário ──► Vercel (Next.js 14)
   Instagram) ficam como `nonNews`/`loginWall`: fora da busca geral, mas
   pesquisáveis digitando o domínio em `?site=`.
 - Cada card exibe: iframe da página arquivada (modo `if_`, sem toolbar do
-  Wayback), data do snapshot, nome do site, manchete extraída do HTML
-  (h1 → og:title → title → meta description), link para abrir o snapshot
-  completo e spinner próprio até o iframe carregar.
+  Wayback), data do snapshot, nome do site, **até 4 chamadas de matéria
+  reais** extraídas do HTML (h1–h3 + links de headline, sem o nome do
+  site — fallback: h1 → og:title → title → meta description), link para
+  abrir o snapshot completo e spinner próprio até o iframe carregar.
 - A cada visita, o servidor **sorteia uma amostra de até 16 sites** da lista
   elegível — datas revisitadas mostram combinações diferentes de portais, e
   a primeira carga fica mais rápida. O cache é por `(site, data)`, então os
@@ -134,9 +135,12 @@ Usuário ──► Vercel (Next.js 14)
 
 1. **CDX API** com `from`=`to`=data exata (busca geral) ou janela ±30 dias
    (busca por site), status 200, dedup por digest.
-2. **HTML bruto** (`id_`) baixado uma vez por candidato e validado:
-   tamanho mínimo, blacklist de páginas estacionadas/erro.
-3. **Manchete** extraída com Cheerio (h1 → og:title → title → meta).
+2. **HTML bruto** (`id_`) baixado uma vez por candidato (limitado aos
+   primeiros 300KB) e validado: tamanho mínimo, blacklist de
+   páginas estacionadas/erro.
+3. **Chamadas de matéria** extraídas com Cheerio (h1–h3 + links com
+   class/id de headline, filtrando nav e nome do site) — até 4 por página,
+   o que alimenta o filtro por assunto.
 4. Regras de proteção: User-Agent customizado, timeout de 8s, intervalo
    mínimo de 500ms entre chamadas ao archive.org.
 

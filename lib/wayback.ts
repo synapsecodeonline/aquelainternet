@@ -143,8 +143,9 @@ export function rawHtmlUrl(snapshot: WaybackSnapshot, originalUrl?: string): str
   return `https://web.archive.org/web/${snapshot.timestamp}id_/${target}`;
 }
 
-/** Quanto do HTML basta para manchete + detecção de página parked/erro. */
-const HTML_HEAD_BYTES = 150_000;
+/** Quanto do HTML basta para manchetes + detecção de página parked/erro.
+ *  Portais modernos têm a grade de notícias mais abaixo no documento. */
+const HTML_HEAD_BYTES = 300_000;
 
 export async function fetchRawHtml(
   snapshot: WaybackSnapshot,
