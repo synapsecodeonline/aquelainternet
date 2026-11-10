@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { SnapshotRecord } from "@/types";
 import { iframeUrl } from "@/lib/wayback";
 
@@ -23,6 +23,15 @@ function snapshotGapDays(snapshotTimestamp: string, requestedDate: string): numb
 export function SiteCard({ site, compact = false }: { site: SnapshotRecord; compact?: boolean }) {
   const [iframeBlocked, setIframeBlocked] = useState(false);
   const [loaded, setLoaded] = useState(false);
+
+  // Páginas do Wayback podem demorar (ou nunca disparar onLoad por causa de
+  // assets lentos). Após 12s assumimos que há conteúdo suficiente e
+  // liberamos o card — o usuário já pode navegar/interagir com o iframe.
+  useEffect(() => {
+    if (!site.available || !site.snapshotUrl) return;
+    const t = setTimeout(() => setLoaded(true), 12000);
+    return () => clearTimeout(t);
+  }, [site.available, site.snapshotUrl]);
   const gapDays = snapshotGapDays(site.snapshotTimestamp, site.requestedDate);
   const offDate = gapDays !== null && gapDays > 0;
   const farOff = gapDays !== null && gapDays > 30;
