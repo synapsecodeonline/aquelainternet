@@ -128,10 +128,20 @@ describe("sitesForDate", () => {
     expect(sites.map((s) => s.slug)).not.toContain("facebook");
   });
 
+  it("busca geral só tem portais de notícias (exclui nonNews)", () => {
+    const sites = sitesForDate("2014-07-07");
+    expect(sites.every((s) => !s.nonNews)).toBe(true);
+    expect(sites.map((s) => s.slug)).not.toContain("google");
+    expect(sites.map((s) => s.slug)).not.toContain("wikipedia");
+    expect(sites.map((s) => s.slug)).not.toContain("geocities");
+  });
+
   it("respeita o fim de era dos sites", () => {
-    // GeoCities encerrou ~2009: presente em 2005, ausente em 2020
-    expect(sitesForDate("2005-06-15").map((s) => s.slug)).toContain("geocities");
-    expect(sitesForDate("2020-01-01").map((s) => s.slug)).not.toContain("geocities");
+    // Época encerrou ~2018 e MSNBC ~2012: presentes em 2005, ausentes em 2020
+    expect(sitesForDate("2005-06-15").map((s) => s.slug)).toContain("epoca");
+    expect(sitesForDate("2005-06-15").map((s) => s.slug)).toContain("msnbc");
+    expect(sitesForDate("2020-01-01").map((s) => s.slug)).not.toContain("epoca");
+    expect(sitesForDate("2020-01-01").map((s) => s.slug)).not.toContain("msnbc");
     // Orkut (loginWall) nunca aparece na busca geral
     expect(sitesForDate("2008-01-01").map((s) => s.slug)).not.toContain("orkut");
   });

@@ -4,7 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-export function RandomDateLink() {
+export function RandomDateLink({ site }: { site?: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   return (
@@ -14,7 +14,8 @@ export function RandomDateLink() {
       onClick={() => {
         const start = new Date("1996-01-01").getTime();
         const d = new Date(start + Math.random() * (Date.now() - start));
-        startTransition(() => router.push(`/${d.toISOString().slice(0, 10)}`));
+        const qs = site ? `?site=${encodeURIComponent(site)}` : "";
+        startTransition(() => router.push(`/${d.toISOString().slice(0, 10)}${qs}`));
       }}
     >
       🎲 Outra data

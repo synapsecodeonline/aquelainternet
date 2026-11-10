@@ -153,7 +153,7 @@ export default async function DatePage({
               📸 Gerar card pra compartilhar
             </Link>
           )}
-          <RandomDateLink />
+          <RandomDateLink site={isSearch ? normalizeHost(siteQuery!) : undefined} />
         </div>
       </header>
 
