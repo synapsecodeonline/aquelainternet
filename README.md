@@ -8,6 +8,29 @@ interface do Wayback visível.
 - 🌐 Produção: **https://aquelainternet.vercel.app**
 - 📦 Código: https://github.com/tisomar/aquelainternet (deploy automático na Vercel)
 
+## Arquitetura
+
+```
+Usuário ──► Vercel (Next.js 14)
+              │
+              ├─ /api/* ──► Supabase (Postgres)  ← cache persistente de snapshots
+              │         └─► Wayback Machine CDX  ← fonte real dos dados
+              │
+              ├─ /[date]/card ──► thum.io / Microlink  ← screenshots p/ PNG
+              │
+              └─ /api/cron/daily ◄── Vercel Cron (12h, warm-up)
+                                    n8n no Render (12h e 20h) ──► Instagram Graph API
+```
+
+| Peça | Serviço | Plano |
+|---|---|---|
+| App Next.js (páginas + APIs + cards PNG) | Vercel | Hobby (grátis) |
+| Cache persistente (`snapshots`) | Supabase | Free |
+| Dados históricos | Internet Archive Wayback Machine | público |
+| Screenshots das páginas | thum.io → Microlink (fallback) | free tiers |
+| Agendador de posts | n8n em Docker no Render | Free |
+| Post no Instagram | Meta Graph API | — |
+
 ## Funcionalidades
 
 ### Página inicial (`/`)
@@ -113,11 +136,16 @@ interface do Wayback visível.
 - Leituras quentes respondem em ~100ms; consultas frias levam ~10–60s
   (serializadas pelo throttle de 500ms do Wayback) — a UI mostra loading
   global e por card durante esse período.
+- **Resultados negativos expiram em 10 min** (não 30 dias): se o Wayback
+  falhar numa rajada de consultas, os `available: false` não envenenam o
+  cache — a data se recupera sozinha na próxima visita. Snapshots reais
+  continuam válidos por 30 dias (anos passados não mudam).
 
 ## Stack
 
-Next.js 14 (App Router) · TypeScript · Tailwind CSS · Cheerio ·
-`next/og` (ImageResponse) · Supabase · thum.io (screenshots) · Docker
+Next.js 14 (App Router) · React 18 · TypeScript · Tailwind CSS · Cheerio ·
+`next/og` (ImageResponse) · Supabase · thum.io + Microlink (screenshots) ·
+Vitest · Docker · Vercel (hosting + Cron) · n8n no Render (automação)
 
 ## Como rodar local
 
@@ -242,18 +270,19 @@ curl -o card.png "https://aquelainternet.vercel.app/2014-07-07/card"  # 1200×63
 ## Estrutura
 
 ```
-app/                 rotas: /, /aniversario, /[date], /[date]/share,
-                     /[date]/card, /api/*
+app/                 rotas: /, /aniversario, /comparar, /[date],
+                     /[date]/share, /[date]/card, /api/* (+ loading.tsx)
 components/          SiteGrid, SiteCard, DatePicker, ShareCard, ErrorState,
-                     AnniversaryForm, …
+                     AnniversaryForm, CompareForm, RandomDateLink, …
 lib/                 wayback.ts, cache.ts, search.ts, sites.ts, date.ts,
                      era.ts, parse-headline.ts, site.ts, supabase.ts
 lib/__tests__/       testes Vitest (19 testes)
-types/               tipos compartilhados (DayResult etc.)
+types/               tipos compartilhados (DayResult, SnapshotRecord…)
 supabase/migrations/ 001_snapshots.sql
 n8n/                  instagram-posts.json — workflow de posts 2x/dia
 scripts/             test-wayback.ts
 .env.n8n             template de env vars do n8n (git-ignored)
+vercel.json          Vercel Cron diário (warm-up do card das 12h)
 prompt-*.md          especificação original do projeto (raiz)
 ```
 
@@ -274,8 +303,12 @@ prompt-*.md          especificação original do projeto (raiz)
 - [ ] Rotacionar as chaves do Supabase (foram expostas em chat)
 - [x] UTM nas legendas para medir origem Instagram/WhatsApp
 - [x] Card Stories 1080×1920 (`?format=story`)
+- [x] Card feed compacto: 6 sites com thumbnails quadrados
 - [x] Página `/aniversario` com data de nascimento
 - [x] Testes automatizados (Vitest, 19 testes em `lib/__tests__/`)
 - [x] Fallback de screenshot (thum.io → Microlink; GIF rejeitado)
 - [x] Comparação do mesmo site em duas datas (`/comparar?site=…&a=…&b=…`)
+- [x] Workflow n8n de posts 2x/dia (`n8n/instagram-posts.json`)
+- [ ] Credenciais do Instagram (`IG_ACCESS_TOKEN` + `IG_USER_ID`) → ativar posts
+- [ ] Keep-alive do n8n no Render (cron-job.org/UptimeRobot)
 - [ ] Self-hosted screenshot (Playwright) se os gratuitos virarem gargalo
