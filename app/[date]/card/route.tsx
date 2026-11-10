@@ -105,9 +105,9 @@ export async function GET(
   const isStory = format === "story";
   const width = isStory ? 1080 : 1200;
   const height = isStory ? 1920 : 630;
-  // Feed: 4 sites em 2x2 (tiles grandes, conteúdo legível)
-  // Story: 6 sites em 2 colunas x 3 linhas
-  const maxSites = isStory ? 6 : 4;
+  // Feed: 6 sites em 2 colunas x 3 linhas, thumbnails quadrados compactos
+  // Story: 6 sites em 2 colunas x 3 linhas, tiles grandes
+  const maxSites = 6;
   const thumbWidth = 800;
 
   let result;
@@ -156,11 +156,77 @@ export async function GET(
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: isStory ? 20 : 14, flex: 1 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: isStory ? 20 : 12, flex: 1 }}>
           {rows.map((row, i) => (
-            <div key={i} style={{ display: "flex", gap: isStory ? 20 : 14, flex: 1 }}>
+            <div key={i} style={{ display: "flex", gap: isStory ? 20 : 16, flex: 1 }}>
               {row.map((site) => {
                 const thumb = thumbs[site.siteSlug];
+                const headline = `${formatTs(site.snapshotTimestamp)}${site.headline ? ` · “${site.headline.slice(0, isStory ? 60 : 44)}”` : ""}`;
+                if (!isStory) {
+                  // Feed: thumbnail quadrado + info ao lado (compacto, 6 sites)
+                  return (
+                    <div
+                      key={site.siteSlug}
+                      style={{
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 16,
+                        backgroundColor: "#171717",
+                        border: `2px solid ${site.siteColor}`,
+                        borderRadius: 12,
+                        padding: "12px 16px",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 104,
+                          height: 104,
+                          flexShrink: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: `${site.siteColor}26`,
+                          borderRadius: 8,
+                          overflow: "hidden",
+                        }}
+                      >
+                        {thumb ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={thumb}
+                            alt={site.siteName}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div style={{ fontSize: 44, fontWeight: 800, color: site.siteColor }}>
+                            {site.siteName.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div
+                            style={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: 5,
+                              backgroundColor: site.siteColor,
+                              flexShrink: 0,
+                            }}
+                          />
+                          <div style={{ fontSize: 19, fontWeight: 700, color: "white" }}>
+                            {site.siteName}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 14, color: "#a3a3a3", marginTop: 5 }}>
+                          {headline}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
                 return (
                   <div
                     key={site.siteSlug}
