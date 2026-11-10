@@ -22,7 +22,7 @@ function formatTs(ts: string): string {
   return `${ts.slice(6, 8)}/${ts.slice(4, 6)}/${ts.slice(0, 4)}`;
 }
 
-const THUMB_TIMEOUT_MS = 15000;
+const THUMB_TIMEOUT_MS = 12000;
 const THUMB_ROUNDS = 2;
 const THUMB_CACHE_TTL_MS = 50 * 60 * 1000;
 
@@ -40,25 +40,43 @@ function thumbUrls(snapshotUrl: string, width: number): string[] {
   ];
 }
 
-/** Screenshot do snapshot (thum.io → Microlink como fallback). */
-async function fetchThumb(snapshotUrl: string, width = 800): Promise<string | null> {
-  for (const target of thumbUrls(snapshotUrl, width)) {
-    try {
-      const res = await fetch(target, {
-        headers: { Accept: "image/png,image/jpeg" },
-        signal: AbortSignal.timeout(THUMB_TIMEOUT_MS),
-      });
-      if (!res.ok) continue;
-      const ct = res.headers.get("content-type") ?? "";
-      // GIF não é suportado pelo Satori — trata como falha e tenta o próximo
-      if (!ct.startsWith("image/") || ct.includes("gif")) continue;
-      const buf = await res.arrayBuffer();
-      return `data:${ct.split(";")[0]};base64,${Buffer.from(buf).toString("base64")}`;
-    } catch {
-      // tenta o próximo provider
-    }
+async function fetchOne(target: string): Promise<string | null> {
+  try {
+    const res = await fetch(target, {
+      headers: { Accept: "image/png,image/jpeg" },
+      signal: AbortSignal.timeout(THUMB_TIMEOUT_MS),
+    });
+    if (!res.ok) return null;
+    const ct = res.headers.get("content-type") ?? "";
+    // GIF não é suportado pelo Satori — trata como falha
+    if (!ct.startsWith("image/") || ct.includes("gif")) return null;
+    const buf = await res.arrayBuffer();
+    return `data:${ct.split(";")[0]};base64,${Buffer.from(buf).toString("base64")}`;
+  } catch {
+    return null;
   }
-  return null;
+}
+
+/** Screenshot do snapshot: dispara todos os providers em paralelo e
+ *  fica com o primeiro que responder com imagem válida. */
+async function fetchThumb(snapshotUrl: string, width = 800): Promise<string | null> {
+  const targets = thumbUrls(snapshotUrl, width);
+  return new Promise((resolve) => {
+    let pending = targets.length;
+    let done = false;
+    for (const target of targets) {
+      fetchOne(target).then((data) => {
+        if (done) return;
+        if (data) {
+          done = true;
+          resolve(data);
+        } else if (--pending === 0) {
+          done = true;
+          resolve(null);
+        }
+      });
+    }
+  });
 }
 
 /**

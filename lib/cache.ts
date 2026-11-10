@@ -141,26 +141,31 @@ export async function getDay(date: string): Promise<DayResult> {
     }
   }
 
-  // 2. Sites faltantes/stale → consulta Wayback com delay de 500ms
-  for (const site of missing) {
-    const rec = await fetchFromWayback(site, date);
-    records.push(rec);
+  // 2. Sites faltantes/stale → consulta Wayback em PARALELO.
+  // O throttle global (500ms) já serializa as chamadas ao archive.org,
+  // mas os downloads de HTML se sobrepõem — uma data fria cai de ~40s para ~15s.
+  const fetched = await Promise.all(missing.map((site) => fetchFromWayback(site, date)));
+  for (let i = 0; i < missing.length; i++) {
+    records.push(fetched[i]);
+  }
 
-    if (supabase) {
-      await supabase.from("snapshots").upsert(
-        {
-          site_slug: site.slug,
-          requested_date: date,
-          snapshot_timestamp: rec.snapshotTimestamp,
-          snapshot_url: rec.snapshotUrl,
-          status_code: rec.statusCode,
-          headline: rec.headline,
-          available: rec.available,
-        },
-        { onConflict: "site_slug,requested_date" }
-      );
-    }
-    // O throttle em fetchWithTimeout já garante ≥500ms entre chamadas ao archive.org
+  if (supabase) {
+    await Promise.all(
+      missing.map((site, i) =>
+        supabase.from("snapshots").upsert(
+          {
+            site_slug: site.slug,
+            requested_date: date,
+            snapshot_timestamp: fetched[i].snapshotTimestamp,
+            snapshot_url: fetched[i].snapshotUrl,
+            status_code: fetched[i].statusCode,
+            headline: fetched[i].headline,
+            available: fetched[i].available,
+          },
+          { onConflict: "site_slug,requested_date" }
+        )
+      )
+    );
   }
 
   // Ordena conforme a lista curada

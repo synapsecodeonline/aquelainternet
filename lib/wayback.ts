@@ -143,6 +143,9 @@ export function rawHtmlUrl(snapshot: WaybackSnapshot, originalUrl?: string): str
   return `https://web.archive.org/web/${snapshot.timestamp}id_/${target}`;
 }
 
+/** Quanto do HTML basta para manchete + detecção de página parked/erro. */
+const HTML_HEAD_BYTES = 150_000;
+
 export async function fetchRawHtml(
   snapshot: WaybackSnapshot,
   originalUrl?: string
@@ -150,7 +153,24 @@ export async function fetchRawHtml(
   const url = rawHtmlUrl(snapshot, originalUrl);
   const res = await fetchWithTimeout(url);
   if (!res) return null;
-  return res.text().catch(() => null);
+  // Lê só o início do documento — páginas arquivadas podem ter MBs e só
+  // precisamos do <head>/início do <body> para validar e extrair manchete.
+  if (!res.body) return res.text().catch(() => null);
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let out = "";
+  try {
+    while (out.length < HTML_HEAD_BYTES) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      out += decoder.decode(value, { stream: true });
+    }
+  } catch {
+    // stream interrompido — usa o que já leu
+  } finally {
+    reader.cancel().catch(() => {});
+  }
+  return out || null;
 }
 
 /**
