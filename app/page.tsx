@@ -11,10 +11,9 @@ export const metadata: Metadata = {
 };
 
 const CURATED_DATES = [
-  { date: "2008-07-11", emoji: "📱", label: "iPhone chega ao Brasil" },
-  { date: "2001-09-11", emoji: "🕊️", label: "11 de setembro" },
-  { date: "2005-06-15", emoji: "👾", label: "Era do Orkut" },
+  { date: "2004-06-15", emoji: "👾", label: "Orkut chega ao Brasil" },
   { date: "2006-09-26", emoji: "👤", label: "Facebook chega" },
+  { date: "2008-07-11", emoji: "📱", label: "iPhone chega ao Brasil" },
   { date: "2014-07-07", emoji: "⚽", label: "7 a 1" },
   { date: "2020-03-15", emoji: "🏠", label: "Pandemia" },
 ];
@@ -79,6 +78,28 @@ export default function Home() {
             </p>
             <div className="mt-5">
               <DatePicker />
+            </div>
+          </section>
+
+          {/* Destaque: comparar */}
+          <section className="rounded-3xl border-2 border-sky-300/70 bg-gradient-to-br from-sky-50 via-white to-indigo-50 p-6 text-left shadow-sm dark:border-sky-800 dark:from-sky-950/40 dark:via-neutral-950 dark:to-indigo-950/40 sm:p-8">
+            <div className="flex flex-col items-center gap-5 sm:flex-row sm:text-left">
+              <span className="text-5xl" aria-hidden>🆚</span>
+              <div className="flex-1 space-y-1.5">
+                <h2 className="text-xl font-extrabold sm:text-2xl">
+                  Compare um site em duas datas
+                </h2>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400 sm:text-base">
+                  Digite um domínio e veja lado a lado como ele era em dois momentos
+                  diferentes — a evolução da internet brasileira em uma tela só.
+                </p>
+              </div>
+              <Link
+                href="/comparar"
+                className="inline-flex h-12 shrink-0 items-center rounded-xl bg-sky-600 px-6 text-sm font-bold text-white shadow transition-all hover:bg-sky-700 hover:shadow-md"
+              >
+                Comparar agora →
+              </Link>
             </div>
           </section>
 
@@ -161,14 +182,6 @@ export default function Home() {
               Internet Archive Wayback Machine
             </a>
             . Conteúdo arquivado pertence aos respectivos autores.
-          </p>
-          <p>
-            <Link
-              href="/comparar"
-              className="text-neutral-400 underline decoration-dotted hover:text-neutral-600 dark:hover:text-neutral-300"
-            >
-              🆚 comparar um site em duas datas
-            </Link>
           </p>
         </footer>
       </div>

@@ -42,7 +42,7 @@ export function AnniversaryForm() {
       <input
         type="date"
         value={date}
-        min="2000-01-01"
+        min="2003-01-01"
         onChange={(e) => {
           setDate(e.target.value);
           setError(null);

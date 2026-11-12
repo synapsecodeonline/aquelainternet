@@ -4,9 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-// Internet brasileira já "cheia de sites" a partir de ~2000 — antes disso
-// o acervo é ralo. Por isso o mínimo e o "surpreenda-me" começam em 2000.
-const MIN_DATE = "2000-01-01";
+// Internet brasileira já "cheia de sites" a partir de ~2003 — antes disso
+// o acervo é ralo. Por isso o mínimo e o "surpreenda-me" começam em 2003.
+const MIN_DATE = "2003-01-01";
 
 export function DatePicker() {
   const router = useRouter();

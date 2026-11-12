@@ -12,7 +12,7 @@ export function RandomDateLink({ site }: { site?: string }) {
       variant="outline"
       disabled={isPending}
       onClick={() => {
-        const start = new Date("2000-01-01").getTime();
+        const start = new Date("2003-01-01").getTime();
         const d = new Date(start + Math.random() * (Date.now() - start));
         const qs = site ? `?site=${encodeURIComponent(site)}` : "";
         startTransition(() => router.push(`/${d.toISOString().slice(0, 10)}${qs}`));
