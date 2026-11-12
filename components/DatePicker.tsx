@@ -8,13 +8,6 @@ import { Button } from "@/components/ui/button";
 // o acervo é ralo. Por isso o mínimo e o "surpreenda-me" começam em 2000.
 const MIN_DATE = "2000-01-01";
 
-const SHORTCUTS = [
-  { label: "Bug do milênio", date: "2000-01-01" },
-  { label: "11/09", date: "2001-09-11" },
-  { label: "Era Orkut", date: "2005-06-15" },
-  { label: "7x1", date: "2014-07-07" },
-];
-
 export function DatePicker() {
   const router = useRouter();
   const defaultDate = new Date(Date.now() - 10 * 365.25 * 24 * 60 * 60 * 1000)
@@ -77,11 +70,6 @@ export function DatePicker() {
         <Button variant="outline" onClick={surprise}>
           🎲 Me surpreenda
         </Button>
-        {SHORTCUTS.map((s) => (
-          <Button key={s.date} variant="ghost" size="sm" onClick={() => go(s.date)}>
-            {s.label}
-          </Button>
-        ))}
       </div>
     </div>
   );
