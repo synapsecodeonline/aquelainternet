@@ -1,65 +1,177 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DatePicker } from "@/components/DatePicker";
+import { AnniversaryForm } from "@/components/AnniversaryForm";
 import { SITES } from "@/lib/sites";
 
 export const metadata: Metadata = {
-  title: "Aquela Internet — A Internet No Dia Do Seu Aniversário",
+  title: "Aquela Internet — Como era a internet no dia do seu nascimento",
   description:
-    "Descubra como estavam o Google, o Orkut e o UOL naquele dia — direto do acervo do Internet Archive.",
+    "Descubra como estavam Google, Orkut, UOL e Facebook no dia em que você nasceu — direto do acervo do Internet Archive.",
 };
 
+const CURATED_DATES = [
+  { date: "2000-01-01", emoji: "🐛", label: "Bug do milênio" },
+  { date: "2001-09-11", emoji: "🕊️", label: "11 de setembro" },
+  { date: "2005-06-15", emoji: "👾", label: "Era do Orkut" },
+  { date: "2006-09-26", emoji: "👤", label: "Facebook chega" },
+  { date: "2014-07-07", emoji: "⚽", label: "7 a 1" },
+  { date: "2020-03-15", emoji: "🏠", label: "Pandemia" },
+];
+
+const ERAS = [
+  { years: "1996–1997", label: "Era dos portais" },
+  { years: "1998–2003", label: "Google recém-nascido" },
+  { years: "2004–2007", label: "Orkut, YouTube e Facebook" },
+  { years: "2008–2011", label: "A febre do Orkut" },
+  { years: "2012–2014", label: "Facebook e Instagram" },
+  { years: "2015–2019", label: "A internet no bolso" },
+  { years: "2020–hoje", label: "Pandemia e home office" },
+];
+
 export default function Home() {
+  const siteCount = SITES.filter((s) => !s.loginWall && !s.nonNews).length;
+
   return (
-    <main className="flex min-h-screen flex-col items-center px-6 py-16">
-      <div className="w-full max-w-3xl space-y-10 text-center">
-        <header className="space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-            Como era aquela internet no dia em que você nasceu?
-          </h1>
-          <p className="text-lg text-neutral-600 dark:text-neutral-400">
-            Descubra como estavam o Google, o Orkut e o UOL naquele dia — direto do acervo do
-            Internet Archive.
-          </p>
-        </header>
+    <main className="relative min-h-screen overflow-hidden">
+      {/* fundo decorativo: gradiente sutil + grid retrô */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(60% 50% at 50% -10%, rgba(236,72,153,0.10), transparent), radial-gradient(50% 40% at 80% 110%, rgba(56,189,248,0.08), transparent)",
+        }}
+      />
+      <div className="relative mx-auto flex min-h-screen w-full max-w-4xl flex-col items-center px-6 py-14">
+        <div className="w-full max-w-3xl space-y-10 text-center">
+          <header className="space-y-4">
+            <span className="inline-block rounded-full border border-pink-300/60 bg-pink-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-pink-600 dark:border-pink-800 dark:bg-pink-950/40 dark:text-pink-300">
+              🕰️ Máquina do tempo da internet brasileira
+            </span>
+            <h1 className="text-balance text-4xl font-extrabold tracking-tight sm:text-6xl">
+              Como era a internet no dia em que você nasceu?
+            </h1>
+            <p className="mx-auto max-w-xl text-lg text-neutral-600 dark:text-neutral-400">
+              Google, UOL, Orkut, Facebook e mais{siteCount} portais renderizados como
+              estavam naquele dia — direto do acervo do Internet Archive.
+            </p>
+          </header>
 
-        <DatePicker />
-
-        <p className="text-sm text-neutral-500">
-          <Link href="/comparar" className="underline hover:text-neutral-800 dark:hover:text-neutral-300">
-            ⚖️ Comparar um site em duas datas
-          </Link>
-        </p>
-
-        <section className="grid gap-4 text-left sm:grid-cols-3">
-          {[
-            ["1. Escolha uma data", "Sua data de nascimento, um ano marcante, qualquer dia."],
-            ["2. Veja os sites", `${SITES.filter((s) => !s.loginWall).length} portais icônicos renderizados como estavam naquele dia.`],
-            ["3. Compartilhe", "Exporte um card pronto pras redes sociais."],
-          ].map(([title, desc]) => (
-            <div
-              key={title}
-              className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
-            >
-              <h3 className="font-semibold">{title}</h3>
-              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{desc}</p>
+          {/* CTA principal: aniversário */}
+          <section className="rounded-3xl border-2 border-pink-300/70 bg-gradient-to-b from-pink-50/80 to-white p-6 shadow-sm dark:border-pink-800 dark:from-pink-950/30 dark:to-neutral-950 sm:p-8">
+            <h2 className="text-xl font-bold sm:text-2xl">
+              🎂 Digite sua data de nascimento
+            </h2>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              A gente mostra a internet como ela era no seu primeiro dia de vida.
+            </p>
+            <div className="mt-5 flex justify-center">
+              <AnniversaryForm />
             </div>
-          ))}
-        </section>
-      </div>
+          </section>
 
-      <footer className="mt-auto pt-16 text-center text-xs text-neutral-500">
-        Dados históricos via{" "}
-        <a
-          href="https://archive.org/developers/wayback.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-neutral-800 dark:hover:text-neutral-300"
-        >
-          Internet Archive Wayback Machine
-        </a>
-        . Conteúdo arquivado pertence aos respectivos autores.
-      </footer>
+          {/* CTA secundário: qualquer data */}
+          <section className="rounded-3xl border border-neutral-200 bg-white/70 p-6 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/60">
+            <h2 className="text-lg font-bold">📅 Ou explore qualquer data</h2>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              Um dia marcante, um ano específico, o dia que você quiser relembrar.
+            </p>
+            <div className="mt-5">
+              <DatePicker />
+            </div>
+          </section>
+
+          {/* Datas virais */}
+          <section className="space-y-4">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
+              📣 As datas que todo mundo pesquisa
+            </h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {CURATED_DATES.map((d) => (
+                <Link
+                  key={d.date}
+                  href={`/${d.date}`}
+                  className="group rounded-2xl border border-neutral-200 bg-white/80 px-4 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-pink-300 hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900/70 dark:hover:border-pink-700"
+                >
+                  <span className="text-2xl">{d.emoji}</span>
+                  <p className="mt-2 text-sm font-semibold leading-tight group-hover:text-pink-600 dark:group-hover:text-pink-400">
+                    {d.label}
+                  </p>
+                  <p className="mt-0.5 text-xs text-neutral-500">
+                    {d.date.split("-").reverse().join("/")}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* Como funciona */}
+          <section className="grid gap-4 text-left sm:grid-cols-3">
+            {[
+              ["1", "Escolha uma data", "Sua data de nascimento, um dia marcante, qualquer ano."],
+              ["2", "Veja os sites", `${siteCount} portais icônicos renderizados como estavam naquele dia.`],
+              ["3", "Compartilhe", "Exporte um card pronto pras redes sociais."],
+            ].map(([n, title, desc]) => (
+              <div
+                key={title}
+                className="rounded-2xl border border-neutral-200 bg-white/80 p-4 dark:border-neutral-800 dark:bg-neutral-900/70"
+              >
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-pink-100 text-sm font-bold text-pink-700 dark:bg-pink-950 dark:text-pink-300">
+                  {n}
+                </span>
+                <h3 className="mt-2 font-semibold">{title}</h3>
+                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{desc}</p>
+              </div>
+            ))}
+          </section>
+
+          {/* Linha do tempo das eras */}
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
+              🗺️ A internet brasileira em fases
+            </h2>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {ERAS.map((e) => (
+                <div
+                  key={e.years}
+                  className="min-w-[140px] flex-1 rounded-xl border border-neutral-200 bg-white/80 px-3 py-3 text-left dark:border-neutral-800 dark:bg-neutral-900/70"
+                >
+                  <p className="font-mono text-[11px] font-semibold text-pink-600 dark:text-pink-400">
+                    {e.years}
+                  </p>
+                  <p className="mt-1 text-xs font-medium leading-snug text-neutral-700 dark:text-neutral-300">
+                    {e.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <footer className="mt-auto flex flex-col items-center gap-3 pt-16 text-center text-xs text-neutral-500">
+          <p>
+            Dados históricos via{" "}
+            <a
+              href="https://archive.org/developers/wayback.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-neutral-800 dark:hover:text-neutral-300"
+            >
+              Internet Archive Wayback Machine
+            </a>
+            . Conteúdo arquivado pertence aos respectivos autores.
+          </p>
+          <p>
+            <Link
+              href="/comparar"
+              className="text-neutral-400 underline decoration-dotted hover:text-neutral-600 dark:hover:text-neutral-300"
+            >
+              🆚 comparar um site em duas datas
+            </Link>
+          </p>
+        </footer>
+      </div>
     </main>
   );
 }

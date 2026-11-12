@@ -4,6 +4,7 @@ import { getDay } from "@/lib/cache";
 import { SiteGrid } from "@/components/SiteGrid";
 import { ErrorState } from "@/components/ErrorState";
 import { RandomDateLink } from "@/components/RandomDateLink";
+import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { isValidDate } from "@/lib/date";
 import { eraForDate } from "@/lib/era";
 import { searchSiteRecords } from "@/lib/search";
@@ -154,6 +155,7 @@ export default async function DatePage({
             </Link>
           )}
           <RandomDateLink site={isSearch ? normalizeHost(siteQuery!) : undefined} />
+          <CopyLinkButton url={`${SITE_URL}/${date}`} />
         </div>
       </header>
 

@@ -2,14 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+// Internet brasileira já "cheia de sites" a partir de ~2000 — antes disso
+// o acervo é ralo. Por isso o mínimo e o "surpreenda-me" começam em 2000.
+const MIN_DATE = "2000-01-01";
+
 const SHORTCUTS = [
-  { label: "7x1", date: "2014-07-07" },
-  { label: "11/09", date: "2001-09-11" },
-  { label: "Pandemia", date: "2020-03-15" },
   { label: "Bug do milênio", date: "2000-01-01" },
+  { label: "11/09", date: "2001-09-11" },
+  { label: "Era Orkut", date: "2005-06-15" },
+  { label: "7x1", date: "2014-07-07" },
 ];
 
 export function DatePicker() {
@@ -39,7 +42,7 @@ export function DatePicker() {
   }
 
   function surprise() {
-    const start = new Date("1996-01-01").getTime();
+    const start = new Date(MIN_DATE).getTime();
     const end = Date.now();
     const d = new Date(start + Math.random() * (end - start));
     go(d.toISOString().slice(0, 10));
@@ -51,7 +54,7 @@ export function DatePicker() {
         <input
           type="date"
           value={date}
-          min="1994-01-01"
+          min={MIN_DATE}
           max={new Date().toISOString().slice(0, 10)}
           onChange={(e) => setDate(e.target.value)}
           className="h-12 flex-1 rounded-md border border-neutral-300 bg-white px-3 text-base dark:border-neutral-700 dark:bg-neutral-900"
@@ -80,11 +83,6 @@ export function DatePicker() {
           </Button>
         ))}
       </div>
-      <p className="text-sm text-neutral-500">
-        🎂 <Link href="/aniversario" className="underline hover:text-neutral-800 dark:hover:text-neutral-300">
-          Ver a internet no dia do seu nascimento
-        </Link>
-      </p>
     </div>
   );
 }
