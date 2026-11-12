@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 const CURATED_DATES = [
-  { date: "2000-01-01", emoji: "🐛", label: "Bug do milênio" },
+  { date: "2008-07-11", emoji: "📱", label: "iPhone chega ao Brasil" },
   { date: "2001-09-11", emoji: "🕊️", label: "11 de setembro" },
   { date: "2005-06-15", emoji: "👾", label: "Era do Orkut" },
   { date: "2006-09-26", emoji: "👤", label: "Facebook chega" },
