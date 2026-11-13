@@ -74,7 +74,7 @@ async function fetchFromWayback(site: SiteEntry, date: string): Promise<Snapshot
 }
 
 /** Tamanho da amostra de sites consultados por visita (sorteio por request). */
-const SAMPLE_SIZE = 16;
+const SAMPLE_SIZE = 20;
 
 function sampleSites(sites: SiteEntry[]): SiteEntry[] {
   if (sites.length <= SAMPLE_SIZE) return sites;
