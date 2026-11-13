@@ -244,3 +244,10 @@ export async function searchSiteTimeline(input: string): Promise<SnapshotRecord[
   );
   return results.filter((r): r is SnapshotRecord => r !== null);
 }
+
+/** Captura representativa do site: a mais recente com manchete
+ *  (fallback: a última captura válida da timeline). */
+export function pickRecord(records: SnapshotRecord[]): SnapshotRecord | null {
+  const withHeadline = records.filter((r) => r.headline);
+  return withHeadline[withHeadline.length - 1] ?? records[records.length - 1] ?? null;
+}

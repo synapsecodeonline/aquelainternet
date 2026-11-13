@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { searchSiteTimeline } from "@/lib/search";
+import { searchSiteTimeline, pickRecord } from "@/lib/search";
 import { normalizeHost } from "@/lib/wayback";
 import { SITE_HOST } from "@/lib/site";
 import { fetchThumb } from "@/lib/card-thumb";
@@ -12,13 +12,6 @@ export const maxDuration = 60;
 function formatTs(ts: string): string {
   if (!ts || ts.length < 8) return "";
   return `${ts.slice(6, 8)}/${ts.slice(4, 6)}/${ts.slice(0, 4)}`;
-}
-
-/** Captura representativa do site: a mais recente com manchete
- *  (fallback: a última captura válida da timeline). */
-function pickRecord(records: SnapshotRecord[]): SnapshotRecord | null {
-  const withHeadline = records.filter((r) => r.headline);
-  return withHeadline[withHeadline.length - 1] ?? records[records.length - 1] ?? null;
 }
 
 export async function GET(request: Request) {
@@ -36,6 +29,14 @@ export async function GET(request: Request) {
     records = await searchSiteTimeline(host);
   } catch {
     return new Response("erro ao gerar card", { status: 500 });
+  }
+
+  // ?date=YYYY-MM-DD fixa a captura exibida (sem ele, usa a mais recente)
+  const dateParam = params.get("date");
+  if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+    const ymd = dateParam.replace(/-/g, "");
+    const sameDay = records.filter((r) => r.snapshotTimestamp.startsWith(ymd));
+    if (sameDay.length) records = sameDay;
   }
 
   const pick = pickRecord(records);

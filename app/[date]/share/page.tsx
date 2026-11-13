@@ -81,14 +81,22 @@ export default async function SharePage({ params }: { params: { date: string } }
           caption={caption}
         />
         {cardDomain && (
-          <div className="mt-6 flex justify-center">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <a
               href={`/${date}/card?site=${encodeURIComponent(cardDomain)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full bg-pink-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-pink-600/25 transition-transform hover:scale-105"
             >
-              🖼️ Abrir card gerado ({cardDomain})
+              🖼️ Abrir card story ({cardDomain})
+            </a>
+            <a
+              href={`/${date}/card?site=${encodeURIComponent(cardDomain)}&format=feed`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-neutral-300 px-6 py-3 text-sm font-bold text-neutral-700 transition-colors hover:border-pink-500 hover:text-pink-600 dark:border-neutral-700 dark:text-neutral-300 dark:hover:text-pink-400"
+            >
+              🖼️ Abrir card feed ({cardDomain})
             </a>
           </div>
         )}
