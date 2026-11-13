@@ -22,8 +22,8 @@ function formatTs(ts: string): string {
   return `${ts.slice(6, 8)}/${ts.slice(4, 6)}/${ts.slice(0, 4)}`;
 }
 
-const THUMB_TIMEOUT_MS = 12000;
-const THUMB_ROUNDS = 2;
+const THUMB_TIMEOUT_MS = 15000;
+const THUMB_ROUNDS = 3;
 const THUMB_CACHE_TTL_MS = 50 * 60 * 1000;
 
 // Cache em memória dos screenshots por snapshotUrl — instância serverless
@@ -81,8 +81,8 @@ async function fetchThumb(snapshotUrl: string, width = 800): Promise<string | nu
 
 /**
  * Busca screenshots de todos os sites. Repete até THUMB_ROUNDS rodadas
- * para os que faltarem. Retorna null se alguma imagem não carregar —
- * o card nunca sai com quadrados em branco.
+ * para os que faltarem. Sites sem screenshot saem com fallback de letra —
+ * o card sempre é gerado, nunca falha por imagem indisponível.
  */
 async function fetchAllThumbs(
   sites: { siteSlug: string; snapshotUrl: string }[],
@@ -104,10 +104,10 @@ async function fetchAllThumbs(
         thumbs[s.siteSlug] = data;
       })
     );
-    if (round < THUMB_ROUNDS - 1) await new Promise((r) => setTimeout(r, 1000));
+    if (round < THUMB_ROUNDS - 1) await new Promise((r) => setTimeout(r, 1500));
   }
 
-  return Object.values(thumbs).every(Boolean) ? thumbs : null;
+  return thumbs;
 }
 
 export async function GET(
@@ -120,7 +120,8 @@ export async function GET(
   }
 
   const format = new URL(request.url).searchParams.get("format");
-  const isStory = format === "story";
+  // Padrão: story (1080x1920). Feed só com ?format=feed explícito.
+  const isStory = format !== "feed";
   const width = isStory ? 1080 : 1200;
   const height = isStory ? 1920 : 630;
   // Feed: 6 sites em 2 colunas x 3 linhas, thumbnails quadrados compactos
@@ -137,14 +138,9 @@ export async function GET(
 
   const available = result.sites.filter((s) => s.available).slice(0, maxSites);
 
-  // Só gera o card quando TODAS as imagens carregaram — nunca sai com quadrado em branco
+  // Screenshots dos sites — sites sem imagem saem com fallback de letra,
+  // o card nunca falha por screenshot indisponível
   const thumbs = await fetchAllThumbs(available, thumbWidth);
-  if (!thumbs) {
-    return new Response("imagens indisponíveis, tente novamente", {
-      status: 503,
-      headers: { "Retry-After": "30", "Cache-Control": "no-store" },
-    });
-  }
 
   const cols = 2;
   const rows: (typeof available)[] = [];

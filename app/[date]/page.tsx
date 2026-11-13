@@ -30,7 +30,7 @@ export async function generateMetadata({
     description: "Veja como estavam Google, Orkut, UOL e mais naquele dia.",
     openGraph: {
       title: `Aquela Internet em ${formatDatePt(date)}`,
-      images: [`${SITE_URL}/${date}/card`],
+      images: [`${SITE_URL}/${date}/card?format=feed`],
     },
     twitter: { card: "summary_large_image" },
     alternates: { canonical: `${SITE_URL}/${date}` },

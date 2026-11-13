@@ -18,8 +18,9 @@ export function ShareCard({ date, siteNames }: { date: string; siteNames?: strin
   const [imgState, setImgState] = useState<"loading" | "loaded" | "error">("loading");
   const [nonce, setNonce] = useState(0);
   const bust = nonce ? `v=${nonce}` : "";
+  // Padrão: story (1080x1920). Feed é a opção secundária.
   const cardUrl = `/${date}/card${bust ? `?${bust}` : ""}`;
-  const storyCardUrl = `/${date}/card?format=story${bust ? `&${bust}` : ""}`;
+  const feedCardUrl = `/${date}/card?format=feed${bust ? `&${bust}` : ""}`;
 
   async function copyCaption() {
     const sites = siteNames?.length ? siteNames.slice(0, 4).join(", ") : "Google, Orkut e cia";
@@ -58,7 +59,7 @@ export function ShareCard({ date, siteNames }: { date: string; siteNames?: strin
   async function share() {
     try {
       const blob = await fetchCard(cardUrl);
-      const file = new File([blob], `aquela-internet-${date}.png`, { type: "image/png" });
+      const file = new File([blob], `aquela-internet-${date}-story.png`, { type: "image/png" });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: "Aquela Internet" });
       } else {
@@ -116,19 +117,19 @@ export function ShareCard({ date, siteNames }: { date: string; siteNames?: strin
       )}
       <div className="flex flex-wrap justify-center gap-2">
         <Button
-          onClick={() => download(cardUrl, `aquela-internet-${date}.png`, "PNG baixado!")}
-          disabled={imgState !== "loaded"}
-        >
-          ⬇️ Baixar PNG (feed)
-        </Button>
-        <Button
-          variant="outline"
           onClick={() =>
-            download(storyCardUrl, `aquela-internet-${date}-story.png`, "PNG do story baixado!")
+            download(cardUrl, `aquela-internet-${date}-story.png`, "PNG do story baixado!")
           }
           disabled={imgState !== "loaded"}
         >
           📱 Baixar Stories
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => download(feedCardUrl, `aquela-internet-${date}-feed.png`, "PNG do feed baixado!")}
+          disabled={imgState !== "loaded"}
+        >
+          ⬇️ Baixar PNG (feed)
         </Button>
         <Button variant="outline" onClick={share} disabled={imgState !== "loaded"}>
           🔗 Compartilhar
