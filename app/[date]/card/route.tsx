@@ -109,7 +109,7 @@ export async function GET(
                 <img
                   src={thumb}
                   alt={pick.siteName}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+                  style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "top" }}
                 />
               ) : (
                 <div

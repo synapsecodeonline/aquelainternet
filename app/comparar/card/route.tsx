@@ -76,7 +76,7 @@ function Panel({
           <img
             src={thumb}
             alt={record?.siteName ?? date}
-            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+            style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "top" }}
           />
         ) : record ? (
           <div style={{ fontSize: isStory ? 120 : 72, fontWeight: 800, color }}>

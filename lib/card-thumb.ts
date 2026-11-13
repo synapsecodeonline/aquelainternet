@@ -12,7 +12,7 @@ const thumbCache = new Map<string, { data: string; ts: number }>();
  *  principal), como os grandes portais renderizam no mobile. O painel do
  *  card é ~0.76 de proporção no story e ~3.3 no feed — o crop acompanha. */
 export const VIEWPORTS = {
-  story: { w: 414, h: 900 },
+  story: { w: 414, h: 1000 },
   feed: { w: 1024, h: 420 },
 } as const;
 
