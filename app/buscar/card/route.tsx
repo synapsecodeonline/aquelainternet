@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { searchSiteTimeline, pickRecord } from "@/lib/search";
+import { searchSiteTimeline, pickRecord, findRecordByTimestamp } from "@/lib/search";
 import { normalizeHost } from "@/lib/wayback";
 import { SITE_HOST } from "@/lib/site";
 import { fetchThumb } from "@/lib/card-thumb";
@@ -24,22 +24,36 @@ export async function GET(request: Request) {
   const width = isStory ? 1080 : 1200;
   const height = isStory ? 1920 : 630;
 
-  let records: SnapshotRecord[] = [];
-  try {
-    records = await searchSiteTimeline(host);
-  } catch {
-    return new Response("erro ao gerar card", { status: 500 });
+  // ?ts=YYYYMMDDHHMMSS reproduz exatamente o registro exibido na tela
+  // de share; sem ele, ?date= filtra o dia e o padrão é a captura
+  // mais recente com manchete da timeline.
+  const tsParam = params.get("ts");
+  let pick: SnapshotRecord | null = null;
+  if (tsParam && /^\d{14}$/.test(tsParam)) {
+    try {
+      pick = await findRecordByTimestamp(host, tsParam);
+    } catch {
+      pick = null;
+    }
   }
 
-  // ?date=YYYY-MM-DD fixa a captura exibida (sem ele, usa a mais recente)
-  const dateParam = params.get("date");
-  if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
-    const ymd = dateParam.replace(/-/g, "");
-    const sameDay = records.filter((r) => r.snapshotTimestamp.startsWith(ymd));
-    if (sameDay.length) records = sameDay;
-  }
+  if (!pick) {
+    let records: SnapshotRecord[] = [];
+    try {
+      records = await searchSiteTimeline(host);
+    } catch {
+      return new Response("erro ao gerar card", { status: 500 });
+    }
 
-  const pick = pickRecord(records);
+    const dateParam = params.get("date");
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      const ymd = dateParam.replace(/-/g, "");
+      const sameDay = records.filter((r) => r.snapshotTimestamp.startsWith(ymd));
+      if (sameDay.length) records = sameDay;
+    }
+
+    pick = pickRecord(records);
+  }
   const thumb = pick ? await fetchThumb(pick.snapshotUrl, isStory) : null;
 
   // Só a manchete principal do portal exibido (o campo pode trazer

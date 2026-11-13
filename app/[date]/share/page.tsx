@@ -5,6 +5,7 @@ import { isValidDate } from "@/lib/date";
 import { getDay } from "@/lib/cache";
 import { SITES } from "@/lib/sites";
 import { SITE_URL } from "@/lib/site";
+import { normalizeHost } from "@/lib/wayback";
 
 export const dynamic = "force-dynamic";
 
@@ -17,33 +18,59 @@ function formatDatePt(date: string): string {
   return `${Number(d)} de ${meses[Number(m) - 1]} de ${y}`;
 }
 
-export default async function SharePage({ params }: { params: { date: string } }) {
+export default async function SharePage({
+  params,
+  searchParams,
+}: {
+  params: { date: string };
+  searchParams: { site?: string };
+}) {
   if (!isValidDate(params.date)) notFound();
+
+  const date = params.date;
+  // ?site=<domínio> → card do portal pesquisado na data (captura exata
+  // ou janela ±30d, resolvido pela rota do card). Sem ele, card da data.
+  const siteParam = normalizeHost(searchParams?.site ?? "");
 
   let siteNames: string[] = [];
   let cardDomain: string | null = null;
   try {
-    const result = await getDay(params.date);
-    const available = result.sites.filter((s) => s.available);
-    siteNames = available.map((s) => s.siteName);
-    // Mesmo pick determinístico da rota /[date]/card — o botão abre
-    // exatamente o card que está sendo exibido (data + domínio).
-    const withHeadline = available.filter((s) => s.headline);
-    const pool = withHeadline.length ? withHeadline : available;
-    const pick = pool.length
-      ? pool[
-          params.date.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % pool.length
-        ]
-      : null;
-    cardDomain = pick ? SITES.find((s) => s.slug === pick.siteSlug)?.url ?? null : null;
+    if (siteParam) {
+      siteNames = [siteParam];
+      cardDomain = siteParam;
+    } else {
+      const result = await getDay(date);
+      const available = result.sites.filter((s) => s.available);
+      siteNames = available.map((s) => s.siteName);
+      // Mesmo pick determinístico da rota /[date]/card — o botão abre
+      // exatamente o card que está sendo exibido (data + domínio).
+      const withHeadline = available.filter((s) => s.headline);
+      const pool = withHeadline.length ? withHeadline : available;
+      const pick = pool.length
+        ? pool[
+            date.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % pool.length
+          ]
+        : null;
+      cardDomain = pick ? SITES.find((s) => s.slug === pick.siteSlug)?.url ?? null : null;
+    }
   } catch {
     // sem nomes — a legenda usa texto genérico
   }
 
-  const date = params.date;
   const sites = siteNames.length ? siteNames.slice(0, 4).join(", ") : "Google, Orkut e cia";
-  const link = `${SITE_URL}/${date}?utm_source=instagram&utm_medium=social&utm_campaign=share-card`;
-  const caption = `Em ${formatDatePt(date)}, aquela internet era assim 🕰️\n\n${sites} renderizados direto do acervo do Internet Archive. Qual site te trouxe mais memória? 👇\n\n${link}`;
+  const linkQs = [
+    siteParam ? `site=${encodeURIComponent(siteParam)}` : null,
+    "utm_source=instagram",
+    "utm_medium=social",
+    "utm_campaign=share-card",
+  ]
+    .filter(Boolean)
+    .join("&");
+  const link = `${SITE_URL}/${date}?${linkQs}`;
+  const cardBase = siteParam ? `/${date}/card?site=${encodeURIComponent(siteParam)}` : `/${date}/card`;
+  const caption = siteParam
+    ? `${siteParam} em ${formatDatePt(date)} 🕰️\n\nCaptura desse site na data, direto do acervo do Internet Archive. Como ele era? 👇\n\n${link}`
+    : `Em ${formatDatePt(date)}, aquela internet era assim 🕰️\n\n${sites} renderizados direto do acervo do Internet Archive. Qual site te trouxe mais memória? 👇\n\n${link}`;
 
   return (
     <main className="relative min-h-screen overflow-hidden">
@@ -58,10 +85,10 @@ export default async function SharePage({ params }: { params: { date: string } }
       <div className="relative mx-auto w-full max-w-4xl px-6 py-10">
         <header className="mb-8 space-y-3">
           <Link
-            href={`/${params.date}`}
+            href={siteParam ? `/${date}?site=${encodeURIComponent(siteParam)}` : `/${date}`}
             className="inline-flex items-center gap-1 text-sm font-medium text-neutral-500 transition-colors hover:text-pink-600 dark:text-neutral-400 dark:hover:text-pink-400"
           >
-            ← Voltar para a data
+            ← Voltar{siteParam ? ` para ${siteParam}` : " para a data"}
           </Link>
           <h1 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl">
             📸 Seu card da{" "}
@@ -74,8 +101,8 @@ export default async function SharePage({ params }: { params: { date: string } }
           </p>
         </header>
         <ShareCard
-          storyUrl={`/${date}/card`}
-          feedUrl={`/${date}/card?format=feed`}
+          storyUrl={cardBase}
+          feedUrl={`${cardBase}${cardBase.includes("?") ? "&" : "?"}format=feed`}
           fileBase={`aquela-internet-${date}`}
           altText={`Card: Aquela internet em ${formatDatePt(date)}`}
           caption={caption}
@@ -83,7 +110,7 @@ export default async function SharePage({ params }: { params: { date: string } }
         {cardDomain && (
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <a
-              href={`/${date}/card?site=${encodeURIComponent(cardDomain)}`}
+              href={cardBase}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full bg-pink-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-pink-600/25 transition-transform hover:scale-105"
@@ -91,7 +118,7 @@ export default async function SharePage({ params }: { params: { date: string } }
               🖼️ Abrir card story ({cardDomain})
             </a>
             <a
-              href={`/${date}/card?site=${encodeURIComponent(cardDomain)}&format=feed`}
+              href={`${cardBase}${cardBase.includes("?") ? "&" : "?"}format=feed`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full border border-neutral-300 px-6 py-3 text-sm font-bold text-neutral-700 transition-colors hover:border-pink-500 hover:text-pink-600 dark:border-neutral-700 dark:text-neutral-300 dark:hover:text-pink-400"

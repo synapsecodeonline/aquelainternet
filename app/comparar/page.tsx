@@ -125,13 +125,6 @@ export default async function ComparePage({
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <CompareForm site={site} a={a} b={b} />
-          <Link
-            href={`/comparar/share?site=${encodeURIComponent(site)}&a=${a}&b=${b}`}
-            target="_blank"
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-orange-400 px-5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"
-          >
-            📸 Gerar card pra compartilhar
-          </Link>
         </div>
       </header>
       <div className="flex flex-col gap-10 lg:flex-row">

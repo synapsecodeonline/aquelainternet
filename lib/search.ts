@@ -251,3 +251,46 @@ export function pickRecord(records: SnapshotRecord[]): SnapshotRecord | null {
   const withHeadline = records.filter((r) => r.headline);
   return withHeadline[withHeadline.length - 1] ?? records[records.length - 1] ?? null;
 }
+
+/**
+ * UM card: a captura exata de UM host num timestamp específico
+ * (YYYYMMDDHHMMSS). Usado por /buscar/card?ts=… para reproduzir o
+ * mesmo registro exibido na tela de compartilhamento.
+ */
+export async function findRecordByTimestamp(
+  input: string,
+  timestamp: string
+): Promise<SnapshotRecord | null> {
+  const host = normalizeHost(input);
+  if (!host || !/^\d{14}$/.test(timestamp)) return null;
+
+  const date = tsDate(timestamp);
+  const hits = await cdxSearch(host, date);
+  const hit = hits.find((h) => h.timestamp === timestamp);
+  if (!hit) return null;
+
+  const snap = { snapshotUrl: hit.snapshotUrl, timestamp: hit.timestamp, status: hit.status };
+  const html = await fetchRawHtml(snap, hit.original).catch(() => null);
+  if (!html || isJunkPage(html)) return null;
+
+  let path = "/";
+  try {
+    path = new URL(hit.original).pathname || "/";
+  } catch {
+    // original malformado — segue com "/"
+  }
+
+  return {
+    siteSlug: `site-${host}-${date}`,
+    siteName: displayName(hit.original, host),
+    siteColor: "#64748b",
+    requestedDate: date,
+    snapshotTimestamp: hit.timestamp,
+    snapshotUrl: hit.snapshotUrl,
+    statusCode: Number(hit.status) || 200,
+    headline:
+      extractCardHeadline(html, host) ??
+      (path === "/" ? "página inicial" : path.slice(0, 60)),
+    available: true,
+  };
+}

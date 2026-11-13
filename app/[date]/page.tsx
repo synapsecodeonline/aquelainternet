@@ -188,8 +188,10 @@ export default async function DatePage({
             <Link
               href={
                 fellBack
-                  ? `/buscar/share?site=${encodeURIComponent(normalizeHost(siteQuery!))}`
-                  : `/${date}/share`
+                  ? `/buscar/share?site=${encodeURIComponent(normalizeHost(siteQuery!))}&date=${date}`
+                  : isSearch
+                    ? `/${date}/share?site=${encodeURIComponent(normalizeHost(siteQuery!))}`
+                    : `/${date}/share`
               }
               target="_blank"
               className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-orange-400 px-5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"

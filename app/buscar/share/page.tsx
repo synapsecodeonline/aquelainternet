@@ -2,17 +2,25 @@ import Link from "next/link";
 import { ShareCard } from "@/components/ShareCard";
 import { ErrorState } from "@/components/ErrorState";
 import { normalizeHost } from "@/lib/wayback";
-import { searchSiteTimeline, pickRecord } from "@/lib/search";
+import { isValidDate } from "@/lib/date";
+import { searchSiteTimeline, searchSiteWindow, pickRecord } from "@/lib/search";
 import { SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
+function formatDatePt(date: string): string {
+  const [y, m, d] = date.split("-");
+  return `${d}/${m}/${y}`;
+}
+
 export default async function BuscarSharePage({
   searchParams,
 }: {
-  searchParams: { site?: string };
+  searchParams: { site?: string; date?: string };
 }) {
   const host = normalizeHost(searchParams?.site ?? "");
+  const dateParam = searchParams?.date;
+  const hasDate = Boolean(dateParam && isValidDate(dateParam));
 
   if (!host) {
     return (
@@ -22,24 +30,30 @@ export default async function BuscarSharePage({
     );
   }
 
-  // Mesmo pick do card: fixa a data da captura exibida para a URL
-  // data+domínio gerar exatamente esse card (e não "qualquer data").
-  let cardDate: string | null = null;
+  // Mesmo pick do card: fixa o timestamp da captura exibida para a URL
+  // site+ts gerar exatamente esse card (e não "qualquer data").
+  // Com ?date=, o pool são as capturas do domínio na janela de ±30 dias
+  // (mesmo fallback da página de busca); sem ela, a timeline do site.
+  let cardTs: string | null = null;
   try {
-    const records = await searchSiteTimeline(host);
+    const records = hasDate
+      ? await searchSiteWindow(host, dateParam!)
+      : await searchSiteTimeline(host);
     const pick = pickRecord(records);
-    const ts = pick?.snapshotTimestamp ?? "";
-    if (ts.length >= 8) {
-      cardDate = `${ts.slice(0, 4)}-${ts.slice(4, 6)}-${ts.slice(6, 8)}`;
-    }
+    cardTs = pick?.snapshotTimestamp ?? null;
   } catch {
-    // sem data — card usa a captura mais recente
+    // sem captura — card mostra estado vazio
   }
 
   const qs = `site=${encodeURIComponent(host)}`;
-  const dateQs = cardDate ? `&date=${cardDate}` : "";
-  const link = `${SITE_URL}/buscar?${qs}&utm_source=instagram&utm_medium=social&utm_campaign=share-card`;
-  const caption = `${host} através do tempo 🕰️\n\nCapturas desse site em diferentes datas, direto do acervo do Internet Archive. Como ele era antigamente? 👇\n\n${link}`;
+  const cardQs = cardTs ? `${qs}&ts=${cardTs}` : qs;
+  const backHref = hasDate ? `/${dateParam}?site=${encodeURIComponent(host)}` : `/buscar?${qs}`;
+  const link = hasDate
+    ? `${SITE_URL}/${dateParam}?site=${encodeURIComponent(host)}&utm_source=instagram&utm_medium=social&utm_campaign=share-card`
+    : `${SITE_URL}/buscar?${qs}&utm_source=instagram&utm_medium=social&utm_campaign=share-card`;
+  const caption = hasDate
+    ? `${host} em datas próximas de ${formatDatePt(dateParam!)} 🕰️\n\nCapturas desse site num período de ±30 dias, direto do acervo do Internet Archive. Como ele era? 👇\n\n${link}`
+    : `${host} através do tempo 🕰️\n\nCapturas desse site em diferentes datas, direto do acervo do Internet Archive. Como ele era antigamente? 👇\n\n${link}`;
 
   return (
     <main className="relative min-h-screen overflow-hidden">
@@ -54,10 +68,10 @@ export default async function BuscarSharePage({
       <div className="relative mx-auto w-full max-w-4xl px-6 py-10">
         <header className="mb-8 space-y-3">
           <Link
-            href={`/buscar?${qs}`}
+            href={backHref}
             className="inline-flex items-center gap-1 text-sm font-medium text-neutral-500 transition-colors hover:text-pink-600 dark:text-neutral-400 dark:hover:text-pink-400"
           >
-            ← Voltar para {host}
+            ← Voltar{hasDate ? ` para ${formatDatePt(dateParam!)}` : ` para ${host}`}
           </Link>
           <h1 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl">
             📸 Card de <span className="text-pink-600 dark:text-pink-400">{host}</span>
@@ -67,29 +81,29 @@ export default async function BuscarSharePage({
           </p>
         </header>
         <ShareCard
-          storyUrl={`/buscar/card?${qs}${dateQs}`}
-          feedUrl={`/buscar/card?${qs}${dateQs}&format=feed`}
+          storyUrl={`/buscar/card?${cardQs}`}
+          feedUrl={`/buscar/card?${cardQs}&format=feed`}
           fileBase={`aquela-internet-${host}`}
-          altText={`Card: ${host} através do tempo`}
+          altText={`Card: ${host}${hasDate ? ` em ${formatDatePt(dateParam!)}` : " através do tempo"}`}
           caption={caption}
         />
-        {cardDate && (
+        {cardTs && (
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <a
-              href={`/buscar/card?${qs}${dateQs}`}
+              href={`/buscar/card?${cardQs}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full bg-pink-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-pink-600/25 transition-transform hover:scale-105"
             >
-              🖼️ Abrir card story ({host} · {cardDate})
+              🖼️ Abrir card story ({host})
             </a>
             <a
-              href={`/buscar/card?${qs}${dateQs}&format=feed`}
+              href={`/buscar/card?${cardQs}&format=feed`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full border border-neutral-300 px-6 py-3 text-sm font-bold text-neutral-700 transition-colors hover:border-pink-500 hover:text-pink-600 dark:border-neutral-700 dark:text-neutral-300 dark:hover:text-pink-400"
             >
-              🖼️ Abrir card feed ({host} · {cardDate})
+              🖼️ Abrir card feed ({host})
             </a>
           </div>
         )}

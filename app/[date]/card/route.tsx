@@ -1,9 +1,9 @@
 import { ImageResponse } from "next/og";
 import { getDay } from "@/lib/cache";
+import { findExactSiteRecord, searchSiteWindow, pickRecord } from "@/lib/search";
 import { isValidDate } from "@/lib/date";
 import { SITE_HOST } from "@/lib/site";
 import { fetchThumb } from "@/lib/card-thumb";
-import { SITES } from "@/lib/sites";
 import { normalizeHost } from "@/lib/wayback";
 import type { SnapshotRecord } from "@/types";
 
@@ -51,19 +51,23 @@ export async function GET(
 
   // Um único portal: a "Manchete do dia" — mesma escolha determinística
   // da página da data (site com headline sorteado pelo hash da data).
-  // ?site=<domínio> força um portal específico (link "abrir card").
-  const available = result.sites.filter((s) => s.available);
+  // ?site=<domínio> força um portal específico: captura do dia exato ou,
+  // sem ela, a mesma janela de ±30 dias exibida na página de busca.
   let pick: SnapshotRecord | null = null;
   if (siteParam) {
     const host = normalizeHost(siteParam);
-    const siteEntry = SITES.find((s) => normalizeHost(s.url) === host);
-    pick =
-      (siteEntry &&
-        available.find((s) => s.siteSlug === siteEntry.slug)) ||
-      available.find((s) => s.snapshotUrl.includes(host)) ||
-      null;
+    if (host) {
+      try {
+        pick =
+          (await findExactSiteRecord(host, date)) ??
+          pickRecord(await searchSiteWindow(host, date));
+      } catch {
+        pick = null;
+      }
+    }
   }
   if (!pick) {
+    const available = result.sites.filter((s) => s.available);
     const withHeadline = available.filter((s) => s.headline);
     const pool = withHeadline.length ? withHeadline : available;
     pick = pool.length
