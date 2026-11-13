@@ -38,49 +38,63 @@ export function SiteCard({ site, compact = false }: { site: SnapshotRecord; comp
 
   if (!site.available || !site.snapshotUrl) {
     return (
-      <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-neutral-100 p-4 text-center text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900">
-        <span className="text-sm font-medium text-neutral-400" style={{ color: site.siteColor }}>
+      <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-2.5 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50/60 p-6 text-center dark:border-neutral-700 dark:bg-neutral-900/50">
+        <span
+          className="flex h-10 w-10 items-center justify-center rounded-xl text-lg font-black text-white"
+          style={{ backgroundColor: site.siteColor || "#a1a1aa" }}
+        >
+          {site.siteName?.[0]?.toUpperCase() ?? "?"}
+        </span>
+        <span className="text-sm font-semibold text-neutral-500 dark:text-neutral-400">
           {site.siteName}
         </span>
-        <span className="text-xs">sem registro neste dia</span>
+        <span className="text-xs text-neutral-400">sem registro neste dia</span>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-      <div className="flex items-center justify-between gap-2 border-b border-neutral-100 px-3 py-2 dark:border-neutral-800">
-        <div className="min-w-0">
-          <span className="text-sm font-semibold">{site.siteName}</span>
-          <span className="ml-2 text-xs text-neutral-500">{formatTs(site.snapshotTimestamp)}</span>
-          {offDate && (
-            <span
-              title={`Captura a ${gapDays} dia(s) de distância da data pesquisada`}
-              className={`ml-2 inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                farOff
-                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                  : "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
-              }`}
-            >
-              {farOff ? "⚠ " : ""}fora da data
+    <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-pink-300 hover:shadow-lg dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-pink-800">
+      <div className="flex items-center justify-between gap-2 border-b border-neutral-100 px-4 py-3 dark:border-neutral-800">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span
+            className="h-2.5 w-2.5 shrink-0 rounded-full"
+            style={{ backgroundColor: site.siteColor || "#a1a1aa" }}
+          />
+          <div className="min-w-0">
+            <span className="block truncate text-sm font-bold">{site.siteName}</span>
+            <span className="block text-[11px] text-neutral-400">
+              {formatTs(site.snapshotTimestamp)}
+              {offDate && (
+                <span
+                  title={`Captura a ${gapDays} dia(s) de distância da data pesquisada`}
+                  className={`ml-1.5 inline-block rounded px-1.5 py-px text-[10px] font-semibold ${
+                    farOff
+                      ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                      : "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
+                  }`}
+                >
+                  {farOff ? "⚠ " : ""}fora da data
+                </span>
+              )}
             </span>
-          )}
+          </div>
         </div>
         <a
           href={site.snapshotUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 text-xs text-blue-600 hover:underline dark:text-blue-400"
+          className="shrink-0 rounded-lg border border-neutral-200 px-2.5 py-1 text-[11px] font-semibold text-neutral-500 transition-colors hover:border-pink-300 hover:text-pink-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-pink-700 dark:hover:text-pink-400"
         >
-          abrir no Wayback ↗
+          Wayback ↗
         </a>
       </div>
 
       <div className={`relative w-full bg-white ${compact ? "h-[220px]" : "h-[400px]"}`}>
         {!loaded && !iframeBlocked && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" />
-            <span className="text-xs text-neutral-400">carregando…</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5">
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-pink-200 border-t-pink-500" />
+            <span className="text-xs font-medium text-neutral-400">viajando no tempo…</span>
           </div>
         )}
         {iframeBlocked && (
@@ -101,9 +115,12 @@ export function SiteCard({ site, compact = false }: { site: SnapshotRecord; comp
         )}
       </div>
 
-      <div className="border-t border-neutral-100 px-3 py-2 dark:border-neutral-800">
+      <div className="border-t border-neutral-100 bg-neutral-50/50 px-4 py-2.5 dark:border-neutral-800 dark:bg-neutral-900/50">
         {site.headline ? (
-          <p className="truncate text-xs text-neutral-600 dark:text-neutral-400" title={site.headline}>
+          <p
+            className="truncate text-xs font-medium italic text-neutral-600 dark:text-neutral-400"
+            title={site.headline}
+          >
             “{site.headline}”
           </p>
         ) : (

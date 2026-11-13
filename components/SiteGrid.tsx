@@ -36,15 +36,15 @@ export function SiteGrid({
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white/80 px-4 py-3 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/70">
+        <div className="flex flex-wrap items-center gap-3">
           {filtering ? (
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
               {filtered.length} de {sites.length} cards com “{query.trim()}”
             </p>
           ) : sites.length > MAX_CARDS ? (
-            <p className="text-xs text-neutral-500">
-              Mostrando {MAX_CARDS} de {sites.length} sites com captura.
+            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              Mostrando {MAX_CARDS} de {sites.length} sites com captura
             </p>
           ) : (
             <span />
@@ -54,20 +54,20 @@ export function SiteGrid({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filtrar por assunto… (ex.: política, tech, futebol)"
-            className="h-8 w-56 rounded-md border border-neutral-300 bg-white px-3 text-xs text-neutral-700 placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 sm:w-64"
+            className="h-10 w-56 rounded-xl border border-neutral-200 bg-white px-3.5 text-sm text-neutral-700 placeholder:text-neutral-400 transition-colors focus:border-pink-400 focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200 sm:w-72"
             aria-label="Filtrar cards por assunto"
           />
         </div>
         <button
           type="button"
           onClick={() => setOrder(pickRandom(filtered))}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white/80 px-4 py-2.5 text-sm font-semibold text-neutral-600 backdrop-blur transition-all hover:border-pink-300 hover:text-pink-600 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300 dark:hover:border-pink-700 dark:hover:text-pink-400"
         >
           🔀 {filtering || sites.length > MAX_CARDS ? "Novas sugestões" : "Embaralhar"}
         </button>
       </div>
       {filtered.length === 0 ? (
-        <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-6 py-10 text-center text-sm text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="rounded-2xl border border-neutral-200 bg-white/80 px-6 py-10 text-center text-sm text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900/70">
           Nenhum card fala de “{query.trim()}” nesta seleção. Tente outro termo.
         </div>
       ) : (

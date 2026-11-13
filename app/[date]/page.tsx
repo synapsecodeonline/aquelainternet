@@ -112,81 +112,134 @@ export default async function DatePage({
   };
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    <main className="relative min-h-screen overflow-hidden">
+      {/* fundo decorativo: mesmo do início */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(60% 50% at 50% -10%, rgba(236,72,153,0.10), transparent), radial-gradient(50% 40% at 80% 110%, rgba(56,189,248,0.08), transparent)",
+        }}
       />
-      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <Link href="/" className="text-sm text-neutral-500 hover:underline">
-            ← Aquela Internet
+      <div className="relative mx-auto w-full max-w-5xl px-6 py-10">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+
+        <header className="mb-8 space-y-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1 text-sm font-medium text-neutral-500 transition-colors hover:text-pink-600 dark:text-neutral-400 dark:hover:text-pink-400"
+          >
+            ← Voltar ao início
           </Link>
-          <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
-            {isSearch
-              ? `${normalizeHost(siteQuery!)} em ${formatDatePt(date)}`
-              : `Aquela internet em ${formatDatePt(date)}`}
-          </h1>
-          {isSearch ? (
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-              {result.sites.length} página(s) capturada(s) desse site num período de ±30 dias.
-            </p>
-          ) : (
-            <>
-              <span className="mt-3 inline-block rounded-full border border-neutral-300 px-3 py-1 text-xs font-medium text-neutral-600 dark:border-neutral-700 dark:text-neutral-400">
-                {era.label}
-              </span>
-              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-500">{era.blurb}</p>
-              <p className="mt-1 text-neutral-600 dark:text-neutral-400">
-                {result.sites.length} portais com captura neste dia — sorteados da lista de{" "}
-                {sitesForDate(date).length} icônicos.
+          <div className="space-y-3">
+            <h1 className="text-balance text-3xl font-extrabold tracking-tight sm:text-5xl">
+              {isSearch ? (
+                <>
+                  <span className="text-pink-600 dark:text-pink-400">{normalizeHost(siteQuery!)}</span>{" "}
+                  em {formatDatePt(date)}
+                </>
+              ) : (
+                <>
+                  Aquela internet em{" "}
+                  <span className="bg-gradient-to-r from-pink-500 to-orange-400 bg-clip-text text-transparent">
+                    {formatDatePt(date)}
+                  </span>
+                </>
+              )}
+            </h1>
+            {isSearch ? (
+              <p className="max-w-xl text-neutral-600 dark:text-neutral-400">
+                {result.sites.length} página(s) capturada(s) desse site num período de ±30 dias.
               </p>
-            </>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {!isSearch && (
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-block rounded-full border border-pink-300/60 bg-pink-50 px-4 py-1.5 text-xs font-semibold text-pink-600 dark:border-pink-800 dark:bg-pink-950/40 dark:text-pink-300">
+                    {era.label}
+                  </span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {result.sites.length} de {sitesForDate(date).length} portais com captura neste dia
+                  </span>
+                </div>
+                <p className="max-w-xl text-neutral-600 dark:text-neutral-400">{era.blurb}</p>
+              </>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2.5">
+            {!isSearch && (
+              <Link
+                href={`/${date}/share`}
+                target="_blank"
+                className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-orange-400 px-5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"
+              >
+                📸 Gerar card pra compartilhar
+              </Link>
+            )}
+            <RandomDateLink site={isSearch ? normalizeHost(siteQuery!) : undefined} />
+            <CopyLinkButton url={`${SITE_URL}/${date}`} />
+          </div>
+        </header>
+
+        {headlinePick?.headline && (
+          <div className="mb-6 rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-4 dark:border-amber-900/60 dark:from-amber-950/40 dark:to-orange-950/30">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">
+              📰 Manchete do dia — {headlinePick.siteName}
+            </span>
+            <p className="mt-1.5 text-base font-medium text-neutral-800 dark:text-neutral-200">
+              “{headlinePick.headline}”
+            </p>
+          </div>
+        )}
+
+        {result.warnings.map((w) => (
+          <div
+            key={w}
+            className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
+          >
+            {w}
+          </div>
+        ))}
+
+        {result.sites.length === 0 ? (
+          <div className="rounded-3xl border border-neutral-200 bg-white/80 px-6 py-14 text-center dark:border-neutral-800 dark:bg-neutral-900/70">
+            <span className="text-4xl">🕳️</span>
+            <p className="mt-3 font-semibold text-neutral-700 dark:text-neutral-300">
+              Nenhum site tem captura neste dia exato
+            </p>
+            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+              Tente uma data próxima ou busque um site específico na página inicial.
+            </p>
             <Link
-              href={`/${date}/share`}
-              target="_blank"
-              className="inline-flex h-10 items-center rounded-md border border-neutral-300 px-4 text-sm font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
+              href="/"
+              className="mt-5 inline-flex h-11 items-center rounded-xl bg-pink-600 px-5 text-sm font-bold text-white transition-colors hover:bg-pink-700"
             >
-              📸 Gerar card pra compartilhar
+              Escolher outra data →
             </Link>
-          )}
-          <RandomDateLink site={isSearch ? normalizeHost(siteQuery!) : undefined} />
-          <CopyLinkButton url={`${SITE_URL}/${date}`} />
-        </div>
-      </header>
+          </div>
+        ) : (
+          <SiteGrid sites={result.sites} />
+        )}
 
-      {headlinePick?.headline && (
-        <div className="mb-6 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900">
-          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-            📰 Manchete do dia — {headlinePick.siteName}
-          </span>
-          <p className="mt-1 text-sm text-neutral-700 dark:text-neutral-300">
-            “{headlinePick.headline}”
+        <footer className="mt-14 flex flex-col items-center gap-2 pb-6 text-center text-xs text-neutral-500">
+          <p>
+            Dados históricos via{" "}
+            <a
+              href="https://archive.org/developers/wayback.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-pink-600 dark:hover:text-pink-400"
+            >
+              Internet Archive Wayback Machine
+            </a>
+            . Conteúdo arquivado pertence aos respectivos autores.
           </p>
-        </div>
-      )}
-
-      {result.warnings.map((w) => (
-        <div
-          key={w}
-          className="mb-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
-        >
-          {w}
-        </div>
-      ))}
-
-      {result.sites.length === 0 ? (
-        <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-6 py-12 text-center text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900">
-          Nenhum site tem captura neste dia exato. Tente uma data próxima ou busque um site
-          específico na página inicial.
-        </div>
-      ) : (
-        <SiteGrid sites={result.sites} />
-      )}
+        </footer>
+      </div>
     </main>
   );
 }

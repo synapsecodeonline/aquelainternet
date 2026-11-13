@@ -24,7 +24,7 @@ export function CopyLinkButton({ url, label = "Copiar link" }: { url: string; la
     <button
       type="button"
       onClick={copy}
-      className="inline-flex h-10 items-center rounded-md border border-neutral-300 px-4 text-sm font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
+      className="inline-flex h-11 items-center rounded-xl border border-neutral-200 bg-white/80 px-4 text-sm font-semibold text-neutral-600 backdrop-blur transition-all hover:border-pink-300 hover:text-pink-600 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300 dark:hover:border-pink-700 dark:hover:text-pink-400"
     >
       {copied ? "✅ Link copiado!" : `🔗 ${label}`}
     </button>
