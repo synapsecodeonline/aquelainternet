@@ -18,12 +18,35 @@ export default async function SharePage({ params }: { params: { date: string } }
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
-      <Link href={`/${params.date}`} className="text-sm text-neutral-500 hover:underline">
-        ← Voltar
-      </Link>
-      <h1 className="mt-2 mb-6 text-2xl font-bold">Seu card</h1>
-      <ShareCard date={params.date} siteNames={siteNames} />
+    <main className="relative min-h-screen overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(60% 50% at 50% -10%, rgba(236,72,153,0.10), transparent), radial-gradient(50% 40% at 80% 110%, rgba(56,189,248,0.08), transparent)",
+        }}
+      />
+      <div className="relative mx-auto w-full max-w-4xl px-6 py-10">
+        <header className="mb-8 space-y-3">
+          <Link
+            href={`/${params.date}`}
+            className="inline-flex items-center gap-1 text-sm font-medium text-neutral-500 transition-colors hover:text-pink-600 dark:text-neutral-400 dark:hover:text-pink-400"
+          >
+            ← Voltar para a data
+          </Link>
+          <h1 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl">
+            📸 Seu card da{" "}
+            <span className="bg-gradient-to-r from-pink-500 to-orange-400 bg-clip-text text-transparent">
+              Aquela Internet
+            </span>
+          </h1>
+          <p className="max-w-xl text-neutral-600 dark:text-neutral-400">
+            Baixe a imagem em formato de story, copie a legenda e poste nas suas redes.
+          </p>
+        </header>
+        <ShareCard date={params.date} siteNames={siteNames} />
+      </div>
     </main>
   );
 }

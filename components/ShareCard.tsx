@@ -13,6 +13,9 @@ function formatDatePt(date: string): string {
   return `${Number(d)} de ${meses[Number(m) - 1]} de ${y}`;
 }
 
+const btnSecondary =
+  "h-11 rounded-xl border-neutral-200 bg-white/80 font-semibold text-neutral-600 backdrop-blur hover:border-pink-300 hover:text-pink-600 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300 dark:hover:border-pink-700 dark:hover:text-pink-400";
+
 export function ShareCard({ date, siteNames }: { date: string; siteNames?: string[] }) {
   const [status, setStatus] = useState<string | null>(null);
   const [imgState, setImgState] = useState<"loading" | "loaded" | "error">("loading");
@@ -71,52 +74,57 @@ export function ShareCard({ date, siteNames }: { date: string; siteNames?: strin
   }
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="relative w-full max-w-3xl">
-        {imgState !== "loaded" && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-lg border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900">
-            {imgState === "loading" ? (
-              <>
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-300 border-t-neutral-900 dark:border-neutral-700 dark:border-t-neutral-100" />
-                <p className="text-sm text-neutral-500">
-                  Gerando o card… pode levar até 1 minuto na primeira vez.
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-red-600">Não consegui gerar o card.</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setNonce((n) => n + 1);
-                    setImgState("loading");
-                  }}
-                >
-                  Tentar novamente
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={cardUrl}
-          alt={`Card: Aquela internet em ${date}`}
-          onLoad={() => setImgState("loaded")}
-          onError={() => setImgState("error")}
-          className={`w-full rounded-lg border border-neutral-200 dark:border-neutral-800 ${
-            imgState === "loaded" ? "" : "invisible"
-          }`}
-        />
+    <div className="flex flex-col items-center gap-5">
+      <div className="w-full max-w-xl rounded-3xl border border-neutral-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/70">
+        <div className="relative">
+          {imgState !== "loaded" && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-neutral-50/95 dark:bg-neutral-950/95">
+              {imgState === "loading" ? (
+                <>
+                  <div className="h-9 w-9 animate-spin rounded-full border-[3px] border-pink-200 border-t-pink-500" />
+                  <p className="px-6 text-center text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                    Gerando o card… pode levar até 1 minuto na primeira vez.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold text-red-600">Não consegui gerar o card.</p>
+                  <Button
+                    variant="outline"
+                    className={btnSecondary}
+                    onClick={() => {
+                      setNonce((n) => n + 1);
+                      setImgState("loading");
+                    }}
+                  >
+                    🔄 Tentar novamente
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={cardUrl}
+            alt={`Card: Aquela internet em ${date}`}
+            onLoad={() => setImgState("loaded")}
+            onError={() => setImgState("error")}
+            className={`w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 ${
+              imgState === "loaded" ? "" : "invisible"
+            }`}
+          />
+        </div>
       </div>
+
       {imgState === "loaded" && (
-        <p className="rounded-md bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-          ✅ Todos os cards foram carregados! Já pode baixar ou compartilhar.
+        <p className="rounded-full border border-emerald-200 bg-emerald-50 px-5 py-2 text-sm font-semibold text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
+          ✅ Card pronto! Baixe ou compartilhe abaixo.
         </p>
       )}
-      <div className="flex flex-wrap justify-center gap-2">
+
+      <div className="flex flex-wrap justify-center gap-2.5">
         <Button
+          className="h-11 rounded-xl bg-gradient-to-r from-pink-500 to-orange-400 px-5 font-bold text-white hover:from-pink-600 hover:to-orange-500"
           onClick={() =>
             download(cardUrl, `aquela-internet-${date}-story.png`, "PNG do story baixado!")
           }
@@ -126,19 +134,24 @@ export function ShareCard({ date, siteNames }: { date: string; siteNames?: strin
         </Button>
         <Button
           variant="outline"
+          className={btnSecondary}
           onClick={() => download(feedCardUrl, `aquela-internet-${date}-feed.png`, "PNG do feed baixado!")}
           disabled={imgState !== "loaded"}
         >
           ⬇️ Baixar PNG (feed)
         </Button>
-        <Button variant="outline" onClick={share} disabled={imgState !== "loaded"}>
+        <Button variant="outline" className={btnSecondary} onClick={share} disabled={imgState !== "loaded"}>
           🔗 Compartilhar
         </Button>
-        <Button variant="ghost" onClick={copyCaption}>
+        <Button variant="ghost" className="h-11 rounded-xl px-4 font-semibold text-neutral-500 hover:text-pink-600 dark:text-neutral-400" onClick={copyCaption}>
           📋 Copiar legenda
         </Button>
       </div>
-      {status && <p className="text-sm text-neutral-500">{status}</p>}
+      {status && (
+        <p className="rounded-full bg-neutral-100 px-4 py-1.5 text-sm font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+          {status}
+        </p>
+      )}
     </div>
   );
 }
