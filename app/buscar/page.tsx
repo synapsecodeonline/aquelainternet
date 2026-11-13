@@ -72,6 +72,15 @@ export default async function BuscarPage({
                 : "Busque um domínio para ver como ele era em diferentes momentos da internet."}
             </p>
           </div>
+          {host && records.length > 0 && (
+            <Link
+              href={`/buscar/share?site=${encodeURIComponent(host)}`}
+              target="_blank"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-orange-400 px-5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"
+            >
+              📸 Gerar card pra compartilhar
+            </Link>
+          )}
         </header>
 
         {error ? (

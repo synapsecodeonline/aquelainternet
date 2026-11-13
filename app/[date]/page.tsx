@@ -58,6 +58,7 @@ export default async function DatePage({
 
   const siteQuery = searchParams?.site?.trim();
   const isSearch = Boolean(siteQuery);
+  let fellBack = false;
 
   let result: DayResult;
   try {
@@ -71,15 +72,19 @@ export default async function DatePage({
         );
       }
       // Data + domínio: considera os dois — UM card com a captura mais
-      // próxima daquela data (janela de ±30 dias).
+      // próxima daquela data (janela de ±30 dias). Se o site não tiver
+      // captura válida, cai para a visão "só data" (portais do dia).
       const closest = await findClosestSiteRecord(host, date);
-      result = {
-        date,
-        sites: closest ? [closest] : [],
-        warnings: closest
-          ? []
-          : ["Nenhuma captura com conteúdo real desse site foi encontrada num período de ±30 dias."],
-      };
+      if (closest) {
+        result = { date, sites: [closest], warnings: [] };
+      } else {
+        fellBack = true;
+        result = await getDay(date);
+        result.warnings = [
+          ...result.warnings,
+          `${host} não tem captura válida numa janela de ±30 dias desta data — mostrando os portais do dia.`,
+        ];
+      }
     } else {
       result = await getDay(date);
     }
@@ -95,8 +100,11 @@ export default async function DatePage({
   }
 
   const era = eraForDate(date);
+  // Quando a busca por site cai no fallback, a página renderiza como
+  // "só data" — título, subtítulo e links ignoram o domínio.
+  const showSearch = isSearch && !fellBack;
 
-  // "Manchete do dia": escolha determinística por data entre os sites com headline
+  // "Manchetes do dia": escolha determinística por data entre os sites com headline
   const withHeadline = result.sites.filter((s) => s.available && s.headline);
   const headlinePick =
     withHeadline.length > 0
@@ -139,7 +147,7 @@ export default async function DatePage({
           </Link>
           <div className="space-y-3">
             <h1 className="text-balance text-3xl font-extrabold tracking-tight sm:text-5xl">
-              {isSearch ? (
+              {showSearch ? (
                 <>
                   <span className="text-pink-600 dark:text-pink-400">{normalizeHost(siteQuery!)}</span>{" "}
                   em {formatDatePt(date)}
@@ -153,7 +161,7 @@ export default async function DatePage({
                 </>
               )}
             </h1>
-            {isSearch ? (
+            {showSearch ? (
               <p className="max-w-xl text-neutral-600 dark:text-neutral-400">
                 A captura mais próxima de {formatDatePt(date)} — janela de ±30 dias.
               </p>
@@ -173,16 +181,14 @@ export default async function DatePage({
           </div>
 
           <div className="flex flex-wrap gap-2.5">
-            {!isSearch && (
-              <Link
-                href={`/${date}/share`}
-                target="_blank"
-                className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-orange-400 px-5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"
-              >
-                📸 Gerar card pra compartilhar
-              </Link>
-            )}
-            <RandomDateLink site={isSearch ? normalizeHost(siteQuery!) : undefined} />
+            <Link
+              href={`/${date}/share`}
+              target="_blank"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-orange-400 px-5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"
+            >
+              📸 Gerar card pra compartilhar
+            </Link>
+            <RandomDateLink site={showSearch ? normalizeHost(siteQuery!) : undefined} />
             <CopyLinkButton url={`${SITE_URL}/${date}`} />
           </div>
         </header>
@@ -190,7 +196,7 @@ export default async function DatePage({
         {headlinePick?.headline && (
           <div className="mb-6 rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-4 dark:border-amber-900/60 dark:from-amber-950/40 dark:to-orange-950/30">
             <span className="text-xs font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">
-              📰 Manchete do dia — {headlinePick.siteName}
+              📰 Manchetes do dia — {headlinePick.siteName}
             </span>
             <p className="mt-1.5 text-base font-medium text-neutral-800 dark:text-neutral-200">
               “{headlinePick.headline}”

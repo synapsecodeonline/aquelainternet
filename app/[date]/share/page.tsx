@@ -3,8 +3,18 @@ import { notFound } from "next/navigation";
 import { ShareCard } from "@/components/ShareCard";
 import { isValidDate } from "@/lib/date";
 import { getDay } from "@/lib/cache";
+import { SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
+
+function formatDatePt(date: string): string {
+  const [y, m, d] = date.split("-");
+  const meses = [
+    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+  ];
+  return `${Number(d)} de ${meses[Number(m) - 1]} de ${y}`;
+}
 
 export default async function SharePage({ params }: { params: { date: string } }) {
   if (!isValidDate(params.date)) notFound();
@@ -16,6 +26,11 @@ export default async function SharePage({ params }: { params: { date: string } }
   } catch {
     // sem nomes — a legenda usa texto genérico
   }
+
+  const date = params.date;
+  const sites = siteNames.length ? siteNames.slice(0, 4).join(", ") : "Google, Orkut e cia";
+  const link = `${SITE_URL}/${date}?utm_source=instagram&utm_medium=social&utm_campaign=share-card`;
+  const caption = `Em ${formatDatePt(date)}, aquela internet era assim 🕰️\n\n${sites} renderizados direto do acervo do Internet Archive. Qual site te trouxe mais memória? 👇\n\n${link}`;
 
   return (
     <main className="relative min-h-screen overflow-hidden">
@@ -45,7 +60,13 @@ export default async function SharePage({ params }: { params: { date: string } }
             Baixe a imagem em formato de story, copie a legenda e poste nas suas redes.
           </p>
         </header>
-        <ShareCard date={params.date} siteNames={siteNames} />
+        <ShareCard
+          storyUrl={`/${date}/card`}
+          feedUrl={`/${date}/card?format=feed`}
+          fileBase={`aquela-internet-${date}`}
+          altText={`Card: Aquela internet em ${formatDatePt(date)}`}
+          caption={caption}
+        />
       </div>
     </main>
   );

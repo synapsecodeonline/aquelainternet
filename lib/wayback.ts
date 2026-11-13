@@ -156,6 +156,44 @@ export function rawHtmlUrl(snapshot: WaybackSnapshot, originalUrl?: string): str
  *  Portais modernos têm a grade de notícias mais abaixo no documento. */
 const HTML_HEAD_BYTES = 300_000;
 
+function concatBytes(chunks: Uint8Array[], total: number): Uint8Array {
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const c of chunks) {
+    out.set(c, off);
+    off += c.length;
+  }
+  return out;
+}
+
+/**
+ * Decodifica o HTML respeitando o charset da página. Acervos antigos
+ * (geoCities, UOL anos 2000) são majoritariamente windows-1252/latin1 —
+ * decodificar como UTF-8 gera mojibake ("conte�do") nas manchetes.
+ */
+function decodeHtmlBytes(buf: Uint8Array): string {
+  const head = new TextDecoder("latin1").decode(buf.subarray(0, Math.min(buf.length, 8192)));
+  const declared = /charset\s*=\s*["']?\s*([a-zA-Z0-9._-]+)/i.exec(head)?.[1]?.toLowerCase() ?? "";
+
+  let encoding = "utf-8";
+  if (/utf-?8/.test(declared)) encoding = "utf-8";
+  else if (/utf-?16/.test(declared)) encoding = declared.includes("be") ? "utf-16be" : "utf-16le";
+  else if (declared) encoding = "windows-1252"; // iso-8859-1/latin1/windows-1252 → 1252 é superset
+  else {
+    // Sem declaração: UTF-8 estrito; se falhar, windows-1252 (padrão de sites BR antigos)
+    try {
+      new TextDecoder("utf-8", { fatal: true }).decode(buf);
+    } catch {
+      encoding = "windows-1252";
+    }
+  }
+  try {
+    return new TextDecoder(encoding).decode(buf);
+  } catch {
+    return new TextDecoder("windows-1252").decode(buf);
+  }
+}
+
 export async function fetchRawHtml(
   snapshot: WaybackSnapshot,
   originalUrl?: string
@@ -167,20 +205,22 @@ export async function fetchRawHtml(
   // precisamos do <head>/início do <body> para validar e extrair manchete.
   if (!res.body) return res.text().catch(() => null);
   const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let out = "";
+  const chunks: Uint8Array[] = [];
+  let total = 0;
   try {
-    while (out.length < HTML_HEAD_BYTES) {
+    while (total < HTML_HEAD_BYTES) {
       const { done, value } = await reader.read();
       if (done) break;
-      out += decoder.decode(value, { stream: true });
+      chunks.push(value);
+      total += value.length;
     }
   } catch {
     // stream interrompido — usa o que já leu
   } finally {
     reader.cancel().catch(() => {});
   }
-  return out || null;
+  if (total === 0) return null;
+  return decodeHtmlBytes(concatBytes(chunks, total)) || null;
 }
 
 /**

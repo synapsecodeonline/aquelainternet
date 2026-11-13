@@ -79,7 +79,7 @@ export function SiteCard({ site, compact = false }: { site: SnapshotRecord; comp
                       : "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
                   }`}
                 >
-                  {farOff ? "⚠ " : ""}fora da data
+                  {farOff ? "⚠ " : ""}Fora da data pesquisada
                 </span>
               )}
             </span>
