@@ -30,13 +30,18 @@ const THUMB_CACHE_TTL_MS = 50 * 60 * 1000;
 // reaproveita entre gerações de card (o card em si já é cacheado por 1h).
 const thumbCache = new Map<string, { data: string; ts: number }>();
 
+/** Viewport mobile (largura de iPhone) — o portal renderiza como no
+ *  celular e o card mostra o conteúdo inteiro em vez de cortar. */
+const MOBILE_W = 414;
+const MOBILE_H = 1600;
+
 /** Providers de screenshot, em ordem de tentativa. */
-function thumbUrls(snapshotUrl: string, width: number): string[] {
+function thumbUrls(snapshotUrl: string): string[] {
   const target = iframeUrl(snapshotUrl);
   return [
-    `https://image.thum.io/get/width/${width}/${target}`,
+    `https://image.thum.io/get/width/${MOBILE_W}/crop/${MOBILE_H}/${target}`,
     // Microlink embed devolve o screenshot direto em PNG
-    `https://api.microlink.io/?url=${encodeURIComponent(target)}&screenshot=true&meta=false&embed=screenshot.url`,
+    `https://api.microlink.io/?url=${encodeURIComponent(target)}&screenshot=true&meta=false&embed=screenshot.url&screenshot.viewport.width=${MOBILE_W}&screenshot.viewport.height=${MOBILE_H}&screenshot.viewport.isMobile=true&screenshot.viewport.hasTouch=true`,
   ];
 }
 
@@ -59,8 +64,8 @@ async function fetchOne(target: string): Promise<string | null> {
 
 /** Screenshot do snapshot: dispara todos os providers em paralelo e
  *  fica com o primeiro que responder com imagem válida. */
-async function fetchThumb(snapshotUrl: string, width = 800): Promise<string | null> {
-  const targets = thumbUrls(snapshotUrl, width);
+async function fetchThumb(snapshotUrl: string): Promise<string | null> {
+  const targets = thumbUrls(snapshotUrl);
   return new Promise((resolve) => {
     let pending = targets.length;
     let done = false;
@@ -93,7 +98,6 @@ export async function GET(
   const isStory = format !== "feed";
   const width = isStory ? 1080 : 1200;
   const height = isStory ? 1920 : 630;
-  const thumbWidth = 1200;
 
   let result;
   try {
@@ -121,7 +125,7 @@ export async function GET(
     thumb =
       hit && Date.now() - hit.ts < THUMB_CACHE_TTL_MS ? hit.data : null;
     for (let round = 0; !thumb && round < THUMB_ROUNDS; round++) {
-      thumb = await fetchThumb(pick.snapshotUrl, thumbWidth);
+      thumb = await fetchThumb(pick.snapshotUrl);
       if (thumb) thumbCache.set(pick.snapshotUrl, { data: thumb, ts: Date.now() });
       if (!thumb && round < THUMB_ROUNDS - 1) {
         await new Promise((r) => setTimeout(r, 1500));
@@ -222,7 +226,7 @@ export async function GET(
                 <img
                   src={thumb}
                   alt={pick.siteName}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
                 />
               ) : (
                 <div
