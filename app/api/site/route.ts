@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchSiteRecords } from "@/lib/search";
+import { findClosestSiteRecord } from "@/lib/search";
 import { isValidDate } from "@/lib/date";
 import { normalizeHost } from "@/lib/wayback";
 
@@ -23,8 +23,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const sites = await searchSiteRecords(host, date);
-    return NextResponse.json({ date, site: host, sites });
+    // Data + domínio → um único registro: a captura mais próxima da data.
+    const record = await findClosestSiteRecord(host, date);
+    return NextResponse.json({ date, site: host, sites: record ? [record] : [] });
   } catch (e) {
     console.error("/api/site error", e);
     return NextResponse.json({ error: "falha ao consultar o Wayback" }, { status: 502 });

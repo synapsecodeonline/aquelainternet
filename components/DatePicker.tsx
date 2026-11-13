@@ -10,28 +10,28 @@ const MIN_DATE = "2003-01-01";
 
 export function DatePicker() {
   const router = useRouter();
-  const defaultDate = new Date(Date.now() - 10 * 365.25 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
-  const [date, setDate] = useState(defaultDate);
+  // Data começa vazia: o usuário pode buscar só pelo domínio (vai para
+  // /buscar, que mostra capturas em datas diferentes) ou combinar os dois.
+  const [date, setDate] = useState("");
   const [site, setSite] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function path(d: string) {
-    const s = site.trim();
-    return s ? `/${d}?site=${encodeURIComponent(s)}` : `/${d}`;
-  }
-
   function go(d: string) {
-    if (!d) return;
+    const s = site.trim();
     const today = new Date().toISOString().slice(0, 10);
-    if (d > today) {
+    if (d && d > today) {
       setError("essa data ainda não aconteceu");
       return;
     }
+    if (!d && !s) {
+      setError("escolha uma data ou busque um site");
+      return;
+    }
     setError(null);
-    startTransition(() => router.push(path(d)));
+    const qs = s ? `?site=${encodeURIComponent(s)}` : "";
+    const target = d ? `/${d}${qs}` : `/buscar${qs}`;
+    startTransition(() => router.push(target));
   }
 
   function surprise() {
@@ -62,6 +62,12 @@ export function DatePicker() {
         type="text"
         value={site}
         onChange={(e) => setSite(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            go(date);
+          }
+        }}
         placeholder="ou busque um site específico (ex.: uol.com.br)"
         className="h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-900"
         aria-label="Buscar um site específico"

@@ -7,7 +7,7 @@ import { RandomDateLink } from "@/components/RandomDateLink";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { isValidDate } from "@/lib/date";
 import { eraForDate } from "@/lib/era";
-import { searchSiteRecords } from "@/lib/search";
+import { findClosestSiteRecord } from "@/lib/search";
 import { sitesForDate } from "@/lib/sites";
 import { SITE_URL } from "@/lib/site";
 import { normalizeHost } from "@/lib/wayback";
@@ -70,13 +70,15 @@ export default async function DatePage({
           </main>
         );
       }
-      const sites = await searchSiteRecords(host, date);
+      // Data + domínio: considera os dois — UM card com a captura mais
+      // próxima daquela data (janela de ±30 dias).
+      const closest = await findClosestSiteRecord(host, date);
       result = {
         date,
-        sites,
-        warnings: sites.length
+        sites: closest ? [closest] : [],
+        warnings: closest
           ? []
-          : ["Nenhuma página com conteúdo real foi encontrada nesse período para esse site."],
+          : ["Nenhuma captura com conteúdo real desse site foi encontrada num período de ±30 dias."],
       };
     } else {
       result = await getDay(date);
@@ -153,7 +155,7 @@ export default async function DatePage({
             </h1>
             {isSearch ? (
               <p className="max-w-xl text-neutral-600 dark:text-neutral-400">
-                {result.sites.length} página(s) capturada(s) desse site num período de ±30 dias.
+                A captura mais próxima de {formatDatePt(date)} — janela de ±30 dias.
               </p>
             ) : (
               <>
