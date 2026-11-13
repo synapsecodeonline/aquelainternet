@@ -89,14 +89,49 @@ export async function GET(
 
         {pick ? (
           <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-            {/* Manchete principal em destaque */}
+            {/* Screenshot do portal primeiro: ocupa o máximo de espaço
+                para exibir o início da página (masthead + manchetes) */}
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#171717",
+                border: `3px solid ${pick.siteColor}`,
+                borderRadius: isStory ? 24 : 16,
+                overflow: "hidden",
+              }}
+            >
+              {thumb ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={thumb}
+                  alt={pick.siteName}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+                />
+              ) : (
+                <div
+                  style={{
+                    fontSize: isStory ? 140 : 90,
+                    fontWeight: 800,
+                    color: pick.siteColor,
+                  }}
+                >
+                  {pick.siteName.charAt(0)}
+                </div>
+              )}
+            </div>
+
+            {/* Manchete embaixo do conteúdo */}
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
                 borderLeft: `6px solid ${pick.siteColor}`,
                 paddingLeft: isStory ? 24 : 18,
-                marginBottom: isStory ? 28 : 16,
+                marginTop: isStory ? 28 : 16,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
@@ -129,40 +164,6 @@ export async function GET(
               ) : (
                 <div style={{ fontSize: isStory ? 34 : 24, fontWeight: 700, color: "#a3a3a3" }}>
                   Portal arquivado neste dia
-                </div>
-              )}
-            </div>
-
-            {/* Screenshot do portal ocupando o resto do card */}
-            <div
-              style={{
-                flex: 1,
-                minHeight: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#171717",
-                border: `3px solid ${pick.siteColor}`,
-                borderRadius: isStory ? 24 : 16,
-                overflow: "hidden",
-              }}
-            >
-              {thumb ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={thumb}
-                  alt={pick.siteName}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
-                />
-              ) : (
-                <div
-                  style={{
-                    fontSize: isStory ? 140 : 90,
-                    fontWeight: 800,
-                    color: pick.siteColor,
-                  }}
-                >
-                  {pick.siteName.charAt(0)}
                 </div>
               )}
             </div>

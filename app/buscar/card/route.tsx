@@ -73,11 +73,45 @@ export async function GET(request: Request) {
           <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
             <div
               style={{
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#171717",
+                border: `3px solid ${pick.siteColor}`,
+                borderRadius: isStory ? 24 : 16,
+                overflow: "hidden",
+              }}
+            >
+              {thumb ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={thumb}
+                  alt={pick.siteName}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+                />
+              ) : (
+                <div
+                  style={{
+                    fontSize: isStory ? 140 : 90,
+                    fontWeight: 800,
+                    color: pick.siteColor,
+                  }}
+                >
+                  {pick.siteName.charAt(0)}
+                </div>
+              )}
+            </div>
+
+            {/* Manchete embaixo do conteúdo */}
+            <div
+              style={{
                 display: "flex",
                 flexDirection: "column",
                 borderLeft: `6px solid ${pick.siteColor}`,
                 paddingLeft: isStory ? 24 : 18,
-                marginBottom: isStory ? 28 : 16,
+                marginTop: isStory ? 28 : 16,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
@@ -110,39 +144,6 @@ export async function GET(request: Request) {
               ) : (
                 <div style={{ fontSize: isStory ? 34 : 24, fontWeight: 700, color: "#a3a3a3" }}>
                   Site arquivado no acervo
-                </div>
-              )}
-            </div>
-
-            <div
-              style={{
-                flex: 1,
-                minHeight: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#171717",
-                border: `3px solid ${pick.siteColor}`,
-                borderRadius: isStory ? 24 : 16,
-                overflow: "hidden",
-              }}
-            >
-              {thumb ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={thumb}
-                  alt={pick.siteName}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
-                />
-              ) : (
-                <div
-                  style={{
-                    fontSize: isStory ? 140 : 90,
-                    fontWeight: 800,
-                    color: pick.siteColor,
-                  }}
-                >
-                  {pick.siteName.charAt(0)}
                 </div>
               )}
             </div>
