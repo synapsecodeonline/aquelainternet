@@ -79,37 +79,6 @@ async function fetchThumb(snapshotUrl: string, width = 800): Promise<string | nu
   });
 }
 
-/**
- * Busca screenshots de todos os sites. Repete até THUMB_ROUNDS rodadas
- * para os que faltarem. Sites sem screenshot saem com fallback de letra —
- * o card sempre é gerado, nunca falha por imagem indisponível.
- */
-async function fetchAllThumbs(
-  sites: { siteSlug: string; snapshotUrl: string }[],
-  width = 800
-) {
-  const thumbs: Record<string, string | null> = {};
-  for (const s of sites) {
-    const hit = thumbCache.get(s.snapshotUrl);
-    thumbs[s.siteSlug] = hit && Date.now() - hit.ts < THUMB_CACHE_TTL_MS ? hit.data : null;
-  }
-
-  for (let round = 0; round < THUMB_ROUNDS; round++) {
-    const pending = sites.filter((s) => !thumbs[s.siteSlug]);
-    if (pending.length === 0) break;
-    await Promise.all(
-      pending.map(async (s) => {
-        const data = await fetchThumb(s.snapshotUrl, width);
-        if (data) thumbCache.set(s.snapshotUrl, { data, ts: Date.now() });
-        thumbs[s.siteSlug] = data;
-      })
-    );
-    if (round < THUMB_ROUNDS - 1) await new Promise((r) => setTimeout(r, 1500));
-  }
-
-  return thumbs;
-}
-
 export async function GET(
   request: Request,
   { params }: { params: { date: string } }
@@ -124,10 +93,7 @@ export async function GET(
   const isStory = format !== "feed";
   const width = isStory ? 1080 : 1200;
   const height = isStory ? 1920 : 630;
-  // Feed: 6 sites em 2 colunas x 3 linhas, thumbnails quadrados compactos
-  // Story: 6 sites em 2 colunas x 3 linhas, tiles grandes
-  const maxSites = 6;
-  const thumbWidth = 800;
+  const thumbWidth = 1200;
 
   let result;
   try {
@@ -136,17 +102,38 @@ export async function GET(
     return new Response("erro ao gerar card", { status: 500 });
   }
 
-  const available = result.sites.filter((s) => s.available).slice(0, maxSites);
+  // Um único portal: a "Manchete do dia" — mesma escolha determinística
+  // da página da data (site com headline sorteado pelo hash da data).
+  const available = result.sites.filter((s) => s.available);
+  const withHeadline = available.filter((s) => s.headline);
+  const pool = withHeadline.length ? withHeadline : available;
+  const pick = pool.length
+    ? pool[
+        date.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % pool.length
+      ]
+    : null;
 
-  // Screenshots dos sites — sites sem imagem saem com fallback de letra,
+  // Screenshot do portal — sem imagem sai com fallback de letra,
   // o card nunca falha por screenshot indisponível
-  const thumbs = await fetchAllThumbs(available, thumbWidth);
-
-  const cols = 2;
-  const rows: (typeof available)[] = [];
-  for (let i = 0; i < available.length; i += cols) {
-    rows.push(available.slice(i, i + cols));
+  let thumb: string | null = null;
+  if (pick) {
+    const hit = thumbCache.get(pick.snapshotUrl);
+    thumb =
+      hit && Date.now() - hit.ts < THUMB_CACHE_TTL_MS ? hit.data : null;
+    for (let round = 0; !thumb && round < THUMB_ROUNDS; round++) {
+      thumb = await fetchThumb(pick.snapshotUrl, thumbWidth);
+      if (thumb) thumbCache.set(pick.snapshotUrl, { data: thumb, ts: Date.now() });
+      if (!thumb && round < THUMB_ROUNDS - 1) {
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
   }
+
+  const headlineText = pick?.headline
+    ? pick.headline.length > (isStory ? 180 : 110)
+      ? `${pick.headline.slice(0, isStory ? 180 : 110)}…`
+      : pick.headline
+    : null;
 
   return new ImageResponse(
     (
@@ -157,161 +144,117 @@ export async function GET(
           display: "flex",
           flexDirection: "column",
           backgroundColor: "#0a0a0a",
-          padding: isStory ? "72px 64px" : "48px 56px",
+          padding: isStory ? "64px 64px" : "36px 48px",
           fontFamily: "sans-serif",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", marginBottom: isStory ? 48 : 28 }}>
-          <div style={{ fontSize: isStory ? 30 : 22, color: "#a3a3a3", marginBottom: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", marginBottom: isStory ? 36 : 20 }}>
+          <div style={{ fontSize: isStory ? 28 : 20, color: "#a3a3a3", marginBottom: 8 }}>
             {SITE_HOST}
           </div>
-          <div style={{ fontSize: isStory ? 76 : 52, fontWeight: 800, color: "white" }}>
+          <div style={{ fontSize: isStory ? 64 : 40, fontWeight: 800, color: "white" }}>
             {`Aquela internet em ${formatDatePt(date)}`}
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: isStory ? 20 : 12, flex: 1 }}>
-          {rows.map((row, i) => (
-            <div key={i} style={{ display: "flex", gap: isStory ? 20 : 16, flex: 1 }}>
-              {row.map((site) => {
-                const thumb = thumbs[site.siteSlug];
-                const headline = `${formatTs(site.snapshotTimestamp)}${site.headline ? ` · “${site.headline.slice(0, isStory ? 60 : 44)}”` : ""}`;
-                if (!isStory) {
-                  // Feed: thumbnail quadrado + info ao lado (compacto, 6 sites)
-                  return (
-                    <div
-                      key={site.siteSlug}
-                      style={{
-                        flex: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 16,
-                        backgroundColor: "#171717",
-                        border: `2px solid ${site.siteColor}`,
-                        borderRadius: 12,
-                        padding: "12px 16px",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 104,
-                          height: 104,
-                          flexShrink: 0,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          backgroundColor: `${site.siteColor}26`,
-                          borderRadius: 8,
-                          overflow: "hidden",
-                        }}
-                      >
-                        {thumb ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={thumb}
-                            alt={site.siteName}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                          />
-                        ) : (
-                          <div style={{ fontSize: 44, fontWeight: 800, color: site.siteColor }}>
-                            {site.siteName.charAt(0)}
-                          </div>
-                        )}
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div
-                            style={{
-                              width: 10,
-                              height: 10,
-                              borderRadius: 5,
-                              backgroundColor: site.siteColor,
-                              flexShrink: 0,
-                            }}
-                          />
-                          <div style={{ fontSize: 19, fontWeight: 700, color: "white" }}>
-                            {site.siteName}
-                          </div>
-                        </div>
-                        <div style={{ fontSize: 14, color: "#a3a3a3", marginTop: 5 }}>
-                          {headline}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-                return (
-                  <div
-                    key={site.siteSlug}
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      flexDirection: "column",
-                      backgroundColor: "#171717",
-                      border: `2px solid ${site.siteColor}`,
-                      borderRadius: isStory ? 20 : 12,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        flex: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: `${site.siteColor}26`,
-                        overflow: "hidden",
-                      }}
-                    >
-                      {thumb ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={thumb}
-                          alt={site.siteName}
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            fontSize: isStory ? 72 : 44,
-                            fontWeight: 800,
-                            color: site.siteColor,
-                          }}
-                        >
-                          {site.siteName.charAt(0)}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ padding: isStory ? "16px 22px" : "10px 14px", display: "flex", flexDirection: "column" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div
-                          style={{
-                            width: isStory ? 14 : 10,
-                            height: isStory ? 14 : 10,
-                            borderRadius: 7,
-                            backgroundColor: site.siteColor,
-                          }}
-                        />
-                        <div style={{ fontSize: isStory ? 26 : 17, fontWeight: 700, color: "white" }}>
-                          {site.siteName}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: isStory ? 19 : 13, color: "#a3a3a3", marginTop: 6 }}>
-                        {`${formatTs(site.snapshotTimestamp)}${site.headline ? ` · “${site.headline.slice(0, isStory ? 60 : 36)}”` : ""}`}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              {row.length === 0 && <div style={{ flex: 1 }} />}
+        {pick ? (
+          <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+            {/* Manchete principal em destaque */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                borderLeft: `6px solid ${pick.siteColor}`,
+                paddingLeft: isStory ? 24 : 18,
+                marginBottom: isStory ? 28 : 16,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                <div
+                  style={{
+                    width: isStory ? 16 : 12,
+                    height: isStory ? 16 : 12,
+                    borderRadius: 8,
+                    backgroundColor: pick.siteColor,
+                  }}
+                />
+                <div style={{ fontSize: isStory ? 30 : 22, fontWeight: 800, color: pick.siteColor }}>
+                  {pick.siteName}
+                </div>
+                <div style={{ fontSize: isStory ? 20 : 15, color: "#737373" }}>
+                  {formatTs(pick.snapshotTimestamp)}
+                </div>
+              </div>
+              {headlineText ? (
+                <div
+                  style={{
+                    fontSize: isStory ? 46 : 30,
+                    fontWeight: 800,
+                    color: "white",
+                    lineHeight: 1.15,
+                  }}
+                >
+                  {`“${headlineText}”`}
+                </div>
+              ) : (
+                <div style={{ fontSize: isStory ? 34 : 24, fontWeight: 700, color: "#a3a3a3" }}>
+                  Portal arquivado neste dia
+                </div>
+              )}
             </div>
-          ))}
-        </div>
 
-        <div style={{ display: "flex", justifyContent: "center", marginTop: isStory ? 40 : 20 }}>
-          <div style={{ fontSize: isStory ? 26 : 18, color: "#737373" }}>
-            Descubra como era a internet naquele dia — acervo do Internet Archive
+            {/* Screenshot do portal ocupando o resto do card */}
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#171717",
+                border: `3px solid ${pick.siteColor}`,
+                borderRadius: isStory ? 24 : 16,
+                overflow: "hidden",
+              }}
+            >
+              {thumb ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={thumb}
+                  alt={pick.siteName}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                <div
+                  style={{
+                    fontSize: isStory ? 140 : 90,
+                    fontWeight: 800,
+                    color: pick.siteColor,
+                  }}
+                >
+                  {pick.siteName.charAt(0)}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#737373",
+              fontSize: isStory ? 32 : 22,
+            }}
+          >
+            Nenhum portal arquivado nesta data
+          </div>
+        )}
+
+        <div style={{ display: "flex", justifyContent: "center", marginTop: isStory ? 32 : 18 }}>
+          <div style={{ fontSize: isStory ? 24 : 16, color: "#737373" }}>
+            {`Veja a página real de ${pick ? pick.siteName : "um portal"} em ${formatDatePt(date)} — acervo do Internet Archive`}
           </div>
         </div>
       </div>
