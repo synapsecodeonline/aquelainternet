@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import type { SnapshotRecord } from "@/types";
 import { iframeUrl } from "@/lib/wayback";
 
+/** URL same-origin que injeta viewport mobile no snapshot do Wayback. */
+function frameUrl(snapshotUrl: string): string {
+  return `/api/frame?u=${encodeURIComponent(iframeUrl(snapshotUrl))}`;
+}
+
 function formatTs(ts: string): string {
   if (!ts || ts.length < 8) return "";
   return `${ts.slice(6, 8)}/${ts.slice(4, 6)}/${ts.slice(0, 4)}`;
@@ -104,10 +109,13 @@ export function SiteCard({ site, compact = false }: { site: SnapshotRecord; comp
         )}
         {!iframeBlocked && (
           <iframe
-            src={iframeUrl(site.snapshotUrl)}
+            src={frameUrl(site.snapshotUrl)}
             title={`${site.siteName} em ${site.requestedDate}`}
             className="h-full w-full bg-white"
-            sandbox="allow-scripts allow-same-origin allow-popups"
+            // sem allow-same-origin: o frame é same-origin via /api/frame,
+            // manter a origem opaca impede que scripts do snapshot acessen
+            // o DOM ou cookies do site principal
+            sandbox="allow-scripts allow-popups"
             loading="lazy"
             onLoad={() => setLoaded(true)}
             onError={() => setIframeBlocked(true)}

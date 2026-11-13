@@ -22,9 +22,11 @@ export function SiteGrid({
   compact?: boolean;
 }) {
   // Estado no cliente: cada clique sorteia uma nova seleção/ordem de sites
+  // Só exibe cards que realmente têm captura para renderizar
+  const renderable = sites.filter((s) => s.available && s.snapshotUrl);
   const [query, setQuery] = useState("");
-  const filtered = query.trim() ? sites.filter((s) => topicMatch(s, query)) : sites;
-  const [order, setOrder] = useState(() => pickRandom(sites));
+  const filtered = query.trim() ? renderable.filter((s) => topicMatch(s, query)) : renderable;
+  const [order, setOrder] = useState(() => pickRandom(renderable));
 
   // Filtro mudou → re-sorteia dentro do conjunto filtrado
   useEffect(() => {
@@ -40,11 +42,11 @@ export function SiteGrid({
         <div className="flex flex-wrap items-center gap-3">
           {filtering ? (
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-              {filtered.length} de {sites.length} cards com “{query.trim()}”
+              {filtered.length} de {renderable.length} cards com “{query.trim()}”
             </p>
-          ) : sites.length > MAX_CARDS ? (
+          ) : renderable.length > MAX_CARDS ? (
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-              Mostrando {MAX_CARDS} de {sites.length} sites com captura
+              Mostrando {MAX_CARDS} de {renderable.length} sites com captura
             </p>
           ) : (
             <span />
@@ -63,7 +65,7 @@ export function SiteGrid({
           onClick={() => setOrder(pickRandom(filtered))}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white/80 px-4 py-2.5 text-sm font-semibold text-neutral-600 backdrop-blur transition-all hover:border-pink-300 hover:text-pink-600 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300 dark:hover:border-pink-700 dark:hover:text-pink-400"
         >
-          🔀 {filtering || sites.length > MAX_CARDS ? "Novas sugestões" : "Embaralhar"}
+          🔀 {filtering || renderable.length > MAX_CARDS ? "Novas sugestões" : "Embaralhar"}
         </button>
       </div>
       {filtered.length === 0 ? (
