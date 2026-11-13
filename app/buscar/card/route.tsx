@@ -41,10 +41,13 @@ export async function GET(request: Request) {
   const pick = pickRecord(records);
   const thumb = pick ? await fetchThumb(pick.snapshotUrl, isStory) : null;
 
-  const headlineText = pick?.headline
-    ? pick.headline.length > (isStory ? 180 : 110)
-      ? `${pick.headline.slice(0, isStory ? 180 : 110)}…`
-      : pick.headline
+  // Só a manchete principal do portal exibido (o campo pode trazer
+  // várias chamadas unidas por " · " — no card vale apenas a primeira)
+  const mainHeadline = pick?.headline?.split(" · ")[0] ?? null;
+  const headlineText = mainHeadline
+    ? mainHeadline.length > (isStory ? 180 : 110)
+      ? `${mainHeadline.slice(0, isStory ? 180 : 110)}…`
+      : mainHeadline
     : null;
 
   return new ImageResponse(
