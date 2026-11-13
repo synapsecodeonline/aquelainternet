@@ -40,4 +40,3 @@ next-env.d.ts
 
 # segredos locais
 .env
-.env.n8n

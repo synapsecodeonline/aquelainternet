@@ -18,8 +18,8 @@ Usuário ──► Vercel (Next.js 14)
               │
               ├─ /[date]/card, /buscar/card ──► thum.io / Microlink  ← screenshots p/ PNG
               │
-              └─ /api/cron/daily ◄── Vercel Cron (12h, warm-up)
-                                    n8n no Render (12h e 20h) ──► Instagram Graph API
+              └─ /api/cron/daily ◄── automação externa (Python, cron local,
+                                    GitHub Actions…) ──► redes sociais
 ```
 
 | Peça | Serviço | Plano |
@@ -28,8 +28,7 @@ Usuário ──► Vercel (Next.js 14)
 | Cache persistente (`snapshots`) | Supabase | Free |
 | Dados históricos | Internet Archive Wayback Machine | público |
 | Screenshots das páginas | thum.io → Microlink (fallback) | free tiers |
-| Agendador de posts | n8n em Docker no Render | Free |
-| Post no Instagram | Meta Graph API | — |
+| Agendador de posts | script Python local / cron | — |
 
 ## Funcionalidades
 
@@ -225,7 +224,7 @@ Funções de busca (`lib/search.ts`):
 
 Next.js 14 (App Router) · React 18 · TypeScript · Tailwind CSS · Cheerio ·
 `next/og` (ImageResponse) · Supabase · thum.io + Microlink (screenshots) ·
-Vitest · Docker · Vercel (hosting + Cron) · n8n no Render (automação)
+Vitest · Docker · Vercel (hosting + Cron)
 
 ## Como rodar local
 
@@ -252,8 +251,8 @@ A imagem é Next.js standalone multi-stage (`node:20-alpine`, non-root).
 | `SUPABASE_SERVICE_ROLE_KEY` | não | Chave service role (escrita, bypass RLS) |
 | `NEXT_PUBLIC_SITE_URL` | não | URL pública do site (og:image, canonical, UA). Default: `https://aquelainternet.vercel.app` |
 | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | não | Rate limit opcional |
-| `CRON_SECRET` | não | Secret do `/api/cron/daily` (Vercel Cron e n8n) |
-| `IG_ACCESS_TOKEN` | não | Token Graph API — modo post direto do endpoint (o n8n usa as próprias envs dele) |
+| `CRON_SECRET` | não | Secret do `/api/cron/daily` (Vercel Cron ou automação externa) |
+| `IG_ACCESS_TOKEN` | não | Token Graph API — modo post direto do endpoint |
 | `IG_USER_ID` | não | ID da conta Instagram Business (idem) |
 
 ## Banco de dados
@@ -261,56 +260,25 @@ A imagem é Next.js standalone multi-stage (`node:20-alpine`, non-root).
 Migration em `supabase/migrations/001_snapshots.sql` — já aplicada em
 produção. RLS habilitado: leitura pública (anon), escrita só via service role.
 
-## Post automático no Instagram (n8n + Render)
+## Post automático no Instagram
 
-O agendamento de posts é feito por um workflow **n8n** hospedado no
-**Render** (plano free). O n8n roda **2x ao dia (12h e 20h)** e, a cada
-execução:
+O endpoint **`GET /api/cron/daily`** é o ponto de integração para
+agendamento externo (script Python, cron local, GitHub Actions etc.).
+Ele sorteia uma data, aquece o cache do dia e devolve o material pronto:
 
-1. Chama `GET /api/cron/daily?dry=1` com `Authorization: Bearer
-   $CRON_SECRET` → recebe `{ date, cardUrl, sites, caption }` (data
-   sorteada + URL pública do card PNG + legenda pronta)
-2. `POST /{IG_USER_ID}/media` na Graph API → cria o container com
-   `image_url` + `caption`
-3. `POST /{IG_USER_ID}/media_publish` → publica no feed
+```json
+{ "date": "2014-07-07", "cardUrl": "https://…/2014-07-07/card",
+  "sites": 12, "caption": "🕰️ Hoje em 7 de julho de 2014 — …" }
+```
 
-O arquivo de importação está em **`n8n/instagram-posts.json`**.
-
-### Deploy do n8n no Render (gratuito)
-
-1. https://render.com → login → **New → Web Service → Existing Image**
-2. **Image URL**: `n8nio/n8n:latest` (ou versão fixa, ex.: `n8nio/n8n:1.81.4`)
-3. **Name**: `aquelainternet-n8n` → a URL fica
-   `https://aquelainternet-n8n.onrender.com`
-4. **Plan**: Free
-5. **Environment** — cole as variáveis (template em `.env.n8n`, que é
-   git-ignored por conter a encryption key):
-
-   ```
-   N8N_HOST=aquelainternet-n8n.onrender.com
-   N8N_PROTOCOL=https
-   WEBHOOK_URL=https://aquelainternet-n8n.onrender.com/
-   N8N_ENCRYPTION_KEY=<string aleatória de 32+ chars — gere uma vez e guarde>
-   GENERIC_TIMEZONE=America/Sao_Paulo
-   TZ=America/Sao_Paulo
-   N8N_PORT=10000
-   PORT=10000
-   N8N_PROXY_HOPS=1
-   NODE_ENV=production
-   CRON_SECRET=<mesmo valor configurado na Vercel>
-   IG_ACCESS_TOKEN=<token da Graph API>
-   IG_USER_ID=<id da conta Instagram Business>
-   ```
-
-6. Deploy → abrir a URL → **Quick setup** (criar owner) →
-   **Workflows → Import from File** → `n8n/instagram-posts.json` →
-   **Activate** (toggle).
-
-### Keep-alive (plano free dorme após ~15min sem tráfego)
-
-Workflows agendados não disparam com a instância dormindo. Solução
-gratuita: criar um monitor HTTP em **cron-job.org** ou **UptimeRobot**
-pingando `https://aquelainternet-n8n.onrender.com/healthz` a cada 5min.
+- **`?dry=1`** → só retorna o JSON acima, sem postar nada. É o modo
+  recomendado para automações externas: o script baixa o `cardUrl`
+  (PNG do card) e publica onde quiser com a `caption` pronta.
+- **Sem `dry`** → o próprio endpoint posta no Instagram via Graph API,
+  mas só se `IG_ACCESS_TOKEN` e `IG_USER_ID` estiverem configurados na
+  Vercel. Se não estiverem, retorna `instagram: { skipped: true }`.
+- Auth: `Authorization: Bearer $CRON_SECRET` (o Vercel Cron envia
+  automaticamente; automações externas devem enviar o header).
 
 ### Credenciais do Instagram
 
@@ -318,10 +286,9 @@ Pré-requisitos: conta **Instagram Business/Creator** vinculada a uma
 página do Facebook + app no
 [Meta for Developers](https://developers.facebook.com/) com os escopos
 `instagram_basic` e `instagram_content_publish`. O token e o ID da conta
-(`GET /me/accounts` → conta IG vinculada) vão **somente nas env vars do
-n8n** — não configurar `IG_*` na Vercel, senão o Vercel Cron postaria em
-duplicidade ao meio-dia (ele serve como aquecimento de cache do card das
-12h, já que roda no mesmo horário).
+(`GET /me/accounts` → conta IG vinculada) vão nas env vars `IG_*` da
+Vercel — configure-as só se quiser que o próprio endpoint poste; caso
+contrário, a automação externa cuida da publicação.
 
 ## Deploy
 
@@ -378,9 +345,7 @@ lib/                    wayback.ts (CDX + HTML + charset),
 lib/__tests__/          testes Vitest
 supabase/migrations/    001_snapshots.sql
 types/                  tipos compartilhados (DayResult, SnapshotRecord…)
-n8n/                    instagram-posts.json — workflow de posts 2x/dia
 scripts/                test-wayback.ts
-.env.n8n                template de env vars do n8n (git-ignored)
 vercel.json             Vercel Cron diário (warm-up do card das 12h)
 prompt-*.md             especificação original do projeto (raiz)
 ```
@@ -412,7 +377,6 @@ prompt-*.md             especificação original do projeto (raiz)
 - [x] Timeline do domínio sem data (`/buscar?site=`)
 - [x] Cards de share com URL data+domínio/`ts` exato em todas as telas
 - [x] Correção de charset (mojibake) no HTML arquivado
-- [x] Workflow n8n de posts 2x/dia (`n8n/instagram-posts.json`)
+- [x] Automação diária via `/api/cron/daily?dry=1` (JSON pronto p/ postar)
 - [ ] Credenciais do Instagram (`IG_ACCESS_TOKEN` + `IG_USER_ID`) → ativar posts
-- [ ] Keep-alive do n8n no Render (cron-job.org/UptimeRobot)
 - [ ] Self-hosted screenshot (Playwright) se os gratuitos virarem gargalo

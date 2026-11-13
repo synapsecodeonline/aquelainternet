@@ -110,7 +110,7 @@ export async function GET(request: Request) {
   const cardUrl = `${SITE_URL}/${date}/card`;
   const caption = captionFor(date, siteNames);
 
-  // dry=1: só devolve o material — quem chama (ex.: n8n) faz a postagem
+  // dry=1: só devolve o material — quem chama decide o que fazer com ele
   if (dry) {
     return NextResponse.json({ date, cardUrl, sites: siteNames.length, caption });
   }
