@@ -76,7 +76,9 @@ export function ShareCard({ date, siteNames }: { date: string; siteNames?: strin
   return (
     <div className="flex flex-col items-center gap-5">
       <div className="w-full max-w-xl rounded-3xl border border-neutral-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/70">
-        <div className="relative">
+        {/* Reserva o espaço do card (story 9:16) já durante o loading,
+            para a página não pular quando a imagem chegar. */}
+        <div className="relative mx-auto aspect-[9/16] w-full max-w-[400px] max-h-[80vh]">
           {imgState !== "loaded" && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-neutral-50/95 dark:bg-neutral-950/95">
               {imgState === "loading" ? (
@@ -109,7 +111,7 @@ export function ShareCard({ date, siteNames }: { date: string; siteNames?: strin
             alt={`Card: Aquela internet em ${date}`}
             onLoad={() => setImgState("loaded")}
             onError={() => setImgState("error")}
-            className={`w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 ${
+            className={`h-full w-full rounded-2xl border border-neutral-200 object-contain dark:border-neutral-800 ${
               imgState === "loaded" ? "" : "invisible"
             }`}
           />
