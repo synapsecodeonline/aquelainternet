@@ -1,4 +1,4 @@
-import { cdxSearch, fetchRawHtml, isJunkPage, normalizeHost } from "./wayback";
+import { cdxSearch, cdxExactDay, fetchRawHtml, isJunkPage, normalizeHost } from "./wayback";
 import { extractCardHeadline } from "./parse-headline";
 import type { SnapshotRecord } from "@/types";
 
@@ -98,6 +98,118 @@ export async function findClosestSiteRecord(
   return closestSnapshotRecord(host, date, `site-${host}-${date}`, {
     requestedDate: date,
   });
+}
+
+/**
+ * UM card: captura do host SOMENTE no dia exato da data pesquisada.
+ * Usado por `/{data}?site=…` — se não houver registro naquele dia,
+ * a página cai na timeline do domínio (`searchSiteTimeline`).
+ */
+export async function findExactSiteRecord(
+  input: string,
+  date: string
+): Promise<SnapshotRecord | null> {
+  const host = normalizeHost(input);
+  if (!host) return null;
+
+  const hits = await cdxExactDay(host, date);
+  if (hits.length === 0) return null;
+
+  // Várias capturas no mesmo dia (horários/paths diferentes): dedup por
+  // timestamp e valida as primeiras até achar conteúdo real.
+  const byTs = new Map<string, (typeof hits)[number]>();
+  for (const h of hits) if (!byTs.has(h.timestamp)) byTs.set(h.timestamp, h);
+  const candidates = Array.from(byTs.values()).slice(0, 6);
+
+  for (const h of candidates) {
+    const snap = { snapshotUrl: h.snapshotUrl, timestamp: h.timestamp, status: h.status };
+    const html = await fetchRawHtml(snap, h.original).catch(() => null);
+    if (!html || isJunkPage(html)) continue;
+
+    let path = "/";
+    try {
+      path = new URL(h.original).pathname || "/";
+    } catch {
+      // original malformado — segue com "/"
+    }
+
+    return {
+      siteSlug: `site-${host}-${date}`,
+      siteName: displayName(h.original, host),
+      siteColor: "#64748b",
+      requestedDate: date,
+      snapshotTimestamp: h.timestamp,
+      snapshotUrl: h.snapshotUrl,
+      statusCode: Number(h.status) || 200,
+      headline:
+        extractCardHeadline(html, host) ??
+        (path === "/" ? "página inicial" : path.slice(0, 60)),
+      available: true,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * VÁRIOS cards do mesmo host dentro da janela de ±30 dias da data:
+ * dedup por timestamp, amostra espalhada e valida conteúdo real.
+ * Usado pelo fallback de `/{data}?site=…` quando não há captura no dia
+ * exato — `requestedDate` = data pesquisada, então o badge
+ * "Fora da data pesquisada" marca a distância de cada captura.
+ */
+export async function searchSiteWindow(
+  input: string,
+  date: string
+): Promise<SnapshotRecord[]> {
+  const host = normalizeHost(input);
+  if (!host) return [];
+
+  const hits = await cdxSearch(host, date);
+  if (hits.length === 0) return [];
+
+  const byTs = new Map<string, (typeof hits)[number]>();
+  for (const h of hits) if (!byTs.has(h.timestamp)) byTs.set(h.timestamp, h);
+  const sorted = Array.from(byTs.values()).sort((a, b) =>
+    a.timestamp.localeCompare(b.timestamp)
+  );
+  const stride = Math.max(1, Math.floor(sorted.length / 12));
+  const candidates = sorted.filter((_, i) => i % stride === 0).slice(0, 16);
+
+  const records: SnapshotRecord[] = [];
+  let attempts = 0;
+
+  for (const hit of candidates) {
+    if (records.length >= 8 || attempts >= MAX_ATTEMPTS) break;
+    attempts++;
+
+    const snap = { snapshotUrl: hit.snapshotUrl, timestamp: hit.timestamp, status: hit.status };
+    const html = await fetchRawHtml(snap, hit.original).catch(() => null);
+    if (!html || isJunkPage(html)) continue;
+
+    let path = "/";
+    try {
+      path = new URL(hit.original).pathname || "/";
+    } catch {
+      // original malformado — segue com "/"
+    }
+
+    records.push({
+      siteSlug: `window-${host}-${records.length}`,
+      siteName: displayName(hit.original, host),
+      siteColor: "#64748b",
+      requestedDate: date,
+      snapshotTimestamp: hit.timestamp,
+      snapshotUrl: hit.snapshotUrl,
+      statusCode: Number(hit.status) || 200,
+      headline:
+        extractCardHeadline(html, host) ??
+        (path === "/" ? "página inicial" : path.slice(0, 60)),
+      available: true,
+    });
+  }
+
+  return records;
 }
 
 /** Âncoras espaçadas ~3 anos cobrindo a era do acervo (2002→hoje). */

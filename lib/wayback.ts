@@ -70,6 +70,19 @@ export interface CdxHit {
   snapshotUrl: string;
 }
 
+function parseCdxRows(rows: unknown): CdxHit[] {
+  if (!Array.isArray(rows) || rows.length < 2) return [];
+  return (rows.slice(1) as string[][])
+    .filter((r) => r[0] && r[1])
+    .map(([ts, original, status, digest]) => ({
+      timestamp: ts,
+      original,
+      status: String(status ?? "200"),
+      digest: String(digest ?? ""),
+      snapshotUrl: `https://web.archive.org/web/${ts}/${original}`,
+    }));
+}
+
 /**
  * Capturas do host exato (o CDX canonicaliza www/apex) num range de ±30 dias
  * da data, só status 200. matchType=host/prefix é pesado demais (timeout),
@@ -94,17 +107,29 @@ export async function cdxSearch(
   const res = await fetchWithTimeout(api);
   if (!res || !res.ok) return [];
   const rows: unknown = await res.json().catch(() => null);
-  if (!Array.isArray(rows) || rows.length < 2) return [];
+  return parseCdxRows(rows);
+}
 
-  return (rows.slice(1) as string[][])
-    .filter((r) => r[0] && r[1])
-    .map(([ts, original, status, digest]) => ({
-      timestamp: ts,
-      original,
-      status: String(status ?? "200"),
-      digest: String(digest ?? ""),
-      snapshotUrl: `https://web.archive.org/web/${ts}/${original}`,
-    }));
+/**
+ * Capturas do host SOMENTE no dia exato `date` (YYYY-MM-DD), status 200.
+ * Usado pela busca data+domínio: só exibe 1 card quando há registro
+ * específico para aquele dia — senão cai na timeline do domínio.
+ */
+export async function cdxExactDay(
+  host: string,
+  date: string,
+  limit = 30
+): Promise<CdxHit[]> {
+  const d = date.replace(/-/g, "");
+  const api =
+    `https://web.archive.org/cdx/search/cdx?url=${encodeURIComponent(host)}` +
+    `&output=json&fl=timestamp,original,statuscode,digest` +
+    `&filter=statuscode:200&from=${d}&to=${d}&limit=${limit}`;
+
+  const res = await fetchWithTimeout(api);
+  if (!res || !res.ok) return [];
+  const rows: unknown = await res.json().catch(() => null);
+  return parseCdxRows(rows);
 }
 
 /**

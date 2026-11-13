@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findClosestSiteRecord } from "@/lib/search";
+import { findExactSiteRecord } from "@/lib/search";
 import { isValidDate } from "@/lib/date";
 import { normalizeHost } from "@/lib/wayback";
 
@@ -23,8 +23,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Data + domínio → um único registro: a captura mais próxima da data.
-    const record = await findClosestSiteRecord(host, date);
+    // Data + domínio → um único registro: captura SOMENTE no dia exato.
+    const record = await findExactSiteRecord(host, date);
     return NextResponse.json({ date, site: host, sites: record ? [record] : [] });
   } catch (e) {
     console.error("/api/site error", e);

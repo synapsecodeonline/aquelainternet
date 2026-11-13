@@ -7,7 +7,7 @@ import { RandomDateLink } from "@/components/RandomDateLink";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { isValidDate } from "@/lib/date";
 import { eraForDate } from "@/lib/era";
-import { findClosestSiteRecord, searchSiteTimeline } from "@/lib/search";
+import { findExactSiteRecord, searchSiteWindow } from "@/lib/search";
 import { sitesForDate } from "@/lib/sites";
 import { SITE_URL } from "@/lib/site";
 import { normalizeHost } from "@/lib/wayback";
@@ -71,22 +71,21 @@ export default async function DatePage({
           </main>
         );
       }
-      // Data + domínio: considera os dois — UM card com a captura mais
-      // próxima daquela data (janela de ±30 dias). Se o site não tiver
-      // captura válida, mostra a timeline do domínio (capturas em
-      // outras datas), como no /buscar.
-      const closest = await findClosestSiteRecord(host, date);
-      if (closest) {
-        result = { date, sites: [closest], warnings: [] };
+      // Data + domínio: UM card somente se houver captura NO DIA EXATO.
+      // Sem registro naquele dia → vários cards do mesmo domínio em
+      // outras datas dentro de ±30 dias.
+      const exact = await findExactSiteRecord(host, date);
+      if (exact) {
+        result = { date, sites: [exact], warnings: [] };
       } else {
         fellBack = true;
-        const timeline = await searchSiteTimeline(host);
+        const window_ = await searchSiteWindow(host, date);
         result = {
           date,
-          sites: timeline,
-          warnings: timeline.length
+          sites: window_,
+          warnings: window_.length
             ? [
-                `${host} não tem captura válida numa janela de ±30 dias de ${formatDatePt(date)} — estas são capturas do site em outras datas.`,
+                `${host} não tem captura no dia ${formatDatePt(date)} — estas são capturas do site num período de ±30 dias.`,
               ]
             : [`${host} não tem nenhuma captura com conteúdo real no acervo.`],
         };
@@ -153,7 +152,7 @@ export default async function DatePage({
               {isSearch ? (
                 <>
                   <span className="text-pink-600 dark:text-pink-400">{normalizeHost(siteQuery!)}</span>{" "}
-                  {fellBack ? "através do tempo" : `em ${formatDatePt(date)}`}
+                  {fellBack ? "em datas próximas" : `em ${formatDatePt(date)}`}
                 </>
               ) : (
                 <>
@@ -167,8 +166,8 @@ export default async function DatePage({
             {isSearch ? (
               <p className="max-w-xl text-neutral-600 dark:text-neutral-400">
                 {fellBack
-                  ? `${result.sites.length} captura(s) do site em datas diferentes.`
-                  : `A captura mais próxima de ${formatDatePt(date)} — janela de ±30 dias.`}
+                  ? `${result.sites.length} captura(s) do site num período de ±30 dias desta data.`
+                  : `Captura de ${normalizeHost(siteQuery!)} no dia ${formatDatePt(date)}.`}
               </p>
             ) : (
               <>
