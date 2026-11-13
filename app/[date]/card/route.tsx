@@ -3,6 +3,9 @@ import { getDay } from "@/lib/cache";
 import { isValidDate } from "@/lib/date";
 import { SITE_HOST } from "@/lib/site";
 import { fetchThumb } from "@/lib/card-thumb";
+import { SITES } from "@/lib/sites";
+import { normalizeHost } from "@/lib/wayback";
+import type { SnapshotRecord } from "@/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,7 +34,9 @@ export async function GET(
     return new Response("data inválida", { status: 400 });
   }
 
-  const format = new URL(request.url).searchParams.get("format");
+  const url = new URL(request.url);
+  const format = url.searchParams.get("format");
+  const siteParam = url.searchParams.get("site");
   // Padrão: story (1080x1920). Feed só com ?format=feed explícito.
   const isStory = format !== "feed";
   const width = isStory ? 1080 : 1200;
@@ -46,14 +51,27 @@ export async function GET(
 
   // Um único portal: a "Manchete do dia" — mesma escolha determinística
   // da página da data (site com headline sorteado pelo hash da data).
+  // ?site=<domínio> força um portal específico (link "abrir card").
   const available = result.sites.filter((s) => s.available);
-  const withHeadline = available.filter((s) => s.headline);
-  const pool = withHeadline.length ? withHeadline : available;
-  const pick = pool.length
-    ? pool[
-        date.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % pool.length
-      ]
-    : null;
+  let pick: SnapshotRecord | null = null;
+  if (siteParam) {
+    const host = normalizeHost(siteParam);
+    const siteEntry = SITES.find((s) => normalizeHost(s.url) === host);
+    pick =
+      (siteEntry &&
+        available.find((s) => s.siteSlug === siteEntry.slug)) ||
+      available.find((s) => s.snapshotUrl.includes(host)) ||
+      null;
+  }
+  if (!pick) {
+    const withHeadline = available.filter((s) => s.headline);
+    const pool = withHeadline.length ? withHeadline : available;
+    pick = pool.length
+      ? pool[
+          date.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % pool.length
+        ]
+      : null;
+  }
 
   // Screenshot do portal — sem imagem sai com fallback de letra,
   // o card nunca falha por screenshot indisponível

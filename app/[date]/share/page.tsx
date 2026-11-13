@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ShareCard } from "@/components/ShareCard";
 import { isValidDate } from "@/lib/date";
 import { getDay } from "@/lib/cache";
+import { SITES } from "@/lib/sites";
 import { SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -20,9 +21,21 @@ export default async function SharePage({ params }: { params: { date: string } }
   if (!isValidDate(params.date)) notFound();
 
   let siteNames: string[] = [];
+  let cardDomain: string | null = null;
   try {
     const result = await getDay(params.date);
-    siteNames = result.sites.filter((s) => s.available).map((s) => s.siteName);
+    const available = result.sites.filter((s) => s.available);
+    siteNames = available.map((s) => s.siteName);
+    // Mesmo pick determinístico da rota /[date]/card — o botão abre
+    // exatamente o card que está sendo exibido (data + domínio).
+    const withHeadline = available.filter((s) => s.headline);
+    const pool = withHeadline.length ? withHeadline : available;
+    const pick = pool.length
+      ? pool[
+          params.date.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % pool.length
+        ]
+      : null;
+    cardDomain = pick ? SITES.find((s) => s.slug === pick.siteSlug)?.url ?? null : null;
   } catch {
     // sem nomes — a legenda usa texto genérico
   }
@@ -67,6 +80,18 @@ export default async function SharePage({ params }: { params: { date: string } }
           altText={`Card: Aquela internet em ${formatDatePt(date)}`}
           caption={caption}
         />
+        {cardDomain && (
+          <div className="mt-6 flex justify-center">
+            <a
+              href={`/${date}/card?site=${encodeURIComponent(cardDomain)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full bg-pink-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-pink-600/25 transition-transform hover:scale-105"
+            >
+              🖼️ Abrir card gerado ({cardDomain})
+            </a>
+          </div>
+        )}
       </div>
     </main>
   );
