@@ -2,12 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DatePicker } from "@/components/DatePicker";
 import { AnniversaryForm } from "@/components/AnniversaryForm";
-import { SITES } from "@/lib/sites";
 
 export const metadata: Metadata = {
   title: "Aquela Internet — Como era a internet no dia do seu nascimento",
   description:
-    "Descubra como estavam Google, Orkut, UOL e Facebook no dia em que você nasceu — direto do acervo do Internet Archive.",
+    "Escolha uma data e veja a internet como ela era naquele dia — cada site renderizado como estava, direto do acervo do Internet Archive.",
 };
 
 const CURATED_DATES = [
@@ -29,8 +28,6 @@ const ERAS = [
 ];
 
 export default function Home() {
-  const siteCount = SITES.filter((s) => !s.loginWall && !s.nonNews).length;
-
   return (
     <main className="relative min-h-screen overflow-hidden">
       {/* fundo decorativo: gradiente sutil + grid retrô */}
@@ -52,8 +49,9 @@ export default function Home() {
               Como era a internet no dia em que você nasceu?
             </h1>
             <p className="mx-auto max-w-xl text-lg text-neutral-600 dark:text-neutral-400">
-              Google, UOL, Orkut, Facebook e mais{siteCount} portais renderizados como
-              estavam naquele dia — direto do acervo do Internet Archive.
+              Escolha uma data e mergulhe no passado: cada site renderizado
+              exatamente como estava naquele dia — direto do acervo do
+              Internet Archive.
             </p>
           </header>
 
@@ -125,26 +123,6 @@ export default function Home() {
                 </Link>
               ))}
             </div>
-          </section>
-
-          {/* Como funciona */}
-          <section className="grid gap-4 text-left sm:grid-cols-3">
-            {[
-              ["1", "Escolha uma data", "Sua data de nascimento, um dia marcante, qualquer ano."],
-              ["2", "Veja os sites", `${siteCount} portais icônicos renderizados como estavam naquele dia.`],
-              ["3", "Compartilhe", "Exporte um card pronto pras redes sociais."],
-            ].map(([n, title, desc]) => (
-              <div
-                key={title}
-                className="rounded-2xl border border-neutral-200 bg-white/80 p-4 dark:border-neutral-800 dark:bg-neutral-900/70"
-              >
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-pink-100 text-sm font-bold text-pink-700 dark:bg-pink-950 dark:text-pink-300">
-                  {n}
-                </span>
-                <h3 className="mt-2 font-semibold">{title}</h3>
-                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{desc}</p>
-              </div>
-            ))}
           </section>
 
           {/* Linha do tempo das eras */}
